@@ -9,9 +9,11 @@ C:\Users\leoma\OneDrive\Escritorio\DARKLII\LegacyPlugin\seminario_proyecto\Relea
 C:\Users\leoma\OneDrive\Escritorio\DARKLII\LegacyPlugin\seminario_proyecto\Releases\Release_1.0-2S2025-1.20.1\src\main\java\com\seminario\plugin\sql\battle\wave\EnemySpawn.java
 C:\Users\leoma\OneDrive\Escritorio\DARKLII\LegacyPlugin\seminario_proyecto\Releases\Release_1.0-2S2025-1.20.1\src\main\java\com\seminario\plugin\util\SlideMapRenderer3x3.java
 C:\Users\leoma\OneDrive\Escritorio\DARKLII\LegacyPlugin\seminario_proyecto\Releases\Release_1.0-2S2025-1.20.1\src\main\java\com\seminario\plugin\manager\TutorialSQLPresentationManager.java
+C:\Users\leoma\OneDrive\Escritorio\DARKLII\LegacyPlugin\seminario_proyecto\Releases\Release_1.0-2S2025-1.20.1\src\main\java\com\seminario\plugin\manager\AuthManager.java
 C:\Users\leoma\OneDrive\Escritorio\DARKLII\LegacyPlugin\seminario_proyecto\Releases\Release_1.0-2S2025-1.20.1\src\main\java\com\seminario\plugin\sql\SQLChallengeBank.java
 C:\Users\leoma\OneDrive\Escritorio\DARKLII\LegacyPlugin\seminario_proyecto\Releases\Release_1.0-2S2025-1.20.1\src\main\java\com\seminario\plugin\commands\QuestPlayerCommand.java
 C:\Users\leoma\OneDrive\Escritorio\DARKLII\LegacyPlugin\seminario_proyecto\Releases\Release_1.0-2S2025-1.20.1\src\main\java\com\seminario\plugin\listener\SQLPlayerListener.java
+C:\Users\leoma\OneDrive\Escritorio\DARKLII\LegacyPlugin\seminario_proyecto\Releases\Release_1.0-2S2025-1.20.1\src\main\java\com\seminario\plugin\commands\AuthCommand.java
 C:\Users\leoma\OneDrive\Escritorio\DARKLII\LegacyPlugin\seminario_proyecto\Releases\Release_1.0-2S2025-1.20.1\src\main\java\com\seminario\plugin\sql\battle\BattleSQLDatabase.java
 C:\Users\leoma\OneDrive\Escritorio\DARKLII\LegacyPlugin\seminario_proyecto\Releases\Release_1.0-2S2025-1.20.1\src\main\java\com\seminario\plugin\sql\context\StaticSQLSchemaProvider.java
 C:\Users\leoma\OneDrive\Escritorio\DARKLII\LegacyPlugin\seminario_proyecto\Releases\Release_1.0-2S2025-1.20.1\src\main\java\com\seminario\plugin\listener\PlayerJoinListener.java
@@ -59,6 +61,7 @@ C:\Users\leoma\OneDrive\Escritorio\DARKLII\LegacyPlugin\seminario_proyecto\Relea
 C:\Users\leoma\OneDrive\Escritorio\DARKLII\LegacyPlugin\seminario_proyecto\Releases\Release_1.0-2S2025-1.20.1\src\main\java\com\seminario\plugin\model\SQLBattleWorld.java
 C:\Users\leoma\OneDrive\Escritorio\DARKLII\LegacyPlugin\seminario_proyecto\Releases\Release_1.0-2S2025-1.20.1\src\main\java\com\seminario\plugin\model\SQLDifficulty.java
 C:\Users\leoma\OneDrive\Escritorio\DARKLII\LegacyPlugin\seminario_proyecto\Releases\Release_1.0-2S2025-1.20.1\src\main\java\com\seminario\plugin\sql\context\ExistingSQLDatabaseConnectionProvider.java
+C:\Users\leoma\OneDrive\Escritorio\DARKLII\LegacyPlugin\seminario_proyecto\Releases\Release_1.0-2S2025-1.20.1\src\main\java\com\seminario\plugin\listener\AuthListener.java
 C:\Users\leoma\OneDrive\Escritorio\DARKLII\LegacyPlugin\seminario_proyecto\Releases\Release_1.0-2S2025-1.20.1\src\main\java\com\seminario\plugin\sql\battle\BattleQueryExecutor.java
 C:\Users\leoma\OneDrive\Escritorio\DARKLII\LegacyPlugin\seminario_proyecto\Releases\Release_1.0-2S2025-1.20.1\src\main\java\com\seminario\plugin\model\QuestDefinition.java
 C:\Users\leoma\OneDrive\Escritorio\DARKLII\LegacyPlugin\seminario_proyecto\Releases\Release_1.0-2S2025-1.20.1\src\main\java\com\seminario\plugin\util\HarryNPCAdapter.java

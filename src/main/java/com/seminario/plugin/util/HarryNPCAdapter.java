@@ -30,7 +30,8 @@ public class HarryNPCAdapter implements JsonSerializer<HarryNPC>, JsonDeserializ
         
         // Serialize location manually
         Location loc = src.getLocation();
-        obj.addProperty("world", loc.getWorld().getName());
+        String worldName = loc.getWorld() != null ? loc.getWorld().getName() : src.getWorldName();
+        obj.addProperty("world", worldName);
         obj.addProperty("x", loc.getX());
         obj.addProperty("y", loc.getY());
         obj.addProperty("z", loc.getZ());
@@ -56,10 +57,7 @@ public class HarryNPCAdapter implements JsonSerializer<HarryNPC>, JsonDeserializ
         // Deserialize location
         String worldName = obj.get("world").getAsString();
         World world = Bukkit.getWorld(worldName);
-        if (world == null) {
-            throw new JsonParseException("World " + worldName + " not found");
-        }
-        
+
         Location location = new Location(
             world,
             obj.get("x").getAsDouble(),
@@ -70,6 +68,7 @@ public class HarryNPCAdapter implements JsonSerializer<HarryNPC>, JsonDeserializ
         );
         
         HarryNPC npc = new HarryNPC(id, name, location);
+        npc.setWorldName(worldName);
         
         // Deserialize lines
         String[] linesArray = context.deserialize(obj.get("lines"), String[].class);

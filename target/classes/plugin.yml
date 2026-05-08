@@ -50,9 +50,18 @@ commands:
       /sm spawnpoint set - Set server spawnpoint
       /sm db table <table_name> - Inspect database table contents
       /sm reload - Reload plugin configuration
+      /sm invitation create <invitation_key> <usos> - Create invitation code
+      /sm invitation list - List invitation codes and remaining uses
+      /sm invitation remove <invitation_key> - Remove invitation code
     permission: seminario.admin
     aliases: [seminario]
     tab-complete: true
+  register:
+    description: Register a new user with invitation key
+    usage: /register <invitation_key> <password> <confirm_password>
+  login:
+    description: Authenticate an existing user
+    usage: /login <password>
 
 permissions:
   seminario.admin:

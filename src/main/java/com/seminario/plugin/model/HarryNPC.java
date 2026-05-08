@@ -14,6 +14,7 @@ public class HarryNPC {
     private String id;
     private String name;
     private Location location;
+    private String worldName;
     private List<String> lines;
     private int currentLineIndex;
     private boolean isVisible;
@@ -24,6 +25,7 @@ public class HarryNPC {
         this.id = id;
         this.name = name;
         this.location = location.clone();
+        this.worldName = location.getWorld() != null ? location.getWorld().getName() : null;
         this.lines = new ArrayList<>();
         this.currentLineIndex = 0;
         this.isVisible = true;
@@ -50,6 +52,17 @@ public class HarryNPC {
 
     public void setLocation(Location location) {
         this.location = location.clone();
+        if (location.getWorld() != null) {
+            this.worldName = location.getWorld().getName();
+        }
+    }
+
+    public String getWorldName() {
+        return worldName;
+    }
+
+    public void setWorldName(String worldName) {
+        this.worldName = worldName;
     }
 
     public List<String> getLines() {
@@ -140,7 +153,7 @@ public class HarryNPC {
         return "HarryNPC{" +
                 "id='" + id + '\'' +
                 ", name='" + name + '\'' +
-                ", location=" + location.getWorld().getName() + ":" + 
+                ", location=" + (worldName != null ? worldName : "unknown") + ":" + 
                 location.getBlockX() + ":" + location.getBlockY() + ":" + location.getBlockZ() +
                 ", lines=" + lines.size() +
                 ", currentLine=" + currentLineIndex +

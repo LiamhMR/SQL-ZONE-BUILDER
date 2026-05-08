@@ -7,6 +7,8 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import com.seminario.plugin.manager.AuthManager;
+import com.seminario.plugin.manager.HarryNPCManager;
 import com.seminario.plugin.manager.LobbyManager;
 import com.seminario.plugin.manager.SpawnpointManager;
 import com.seminario.plugin.util.SpawnpointEffects;
@@ -18,17 +20,32 @@ public class PlayerJoinListener implements Listener {
     
     private final SpawnpointManager spawnpointManager;
     private final LobbyManager lobbyManager;
+    private final HarryNPCManager harryNPCManager;
+    private final AuthManager authManager;
     private final JavaPlugin plugin;
+    private boolean firstJoinRecoveryExecuted;
     
-    public PlayerJoinListener(SpawnpointManager spawnpointManager, LobbyManager lobbyManager, JavaPlugin plugin) {
+    public PlayerJoinListener(SpawnpointManager spawnpointManager, LobbyManager lobbyManager, HarryNPCManager harryNPCManager, AuthManager authManager, JavaPlugin plugin) {
         this.spawnpointManager = spawnpointManager;
         this.lobbyManager = lobbyManager;
+        this.harryNPCManager = harryNPCManager;
+        this.authManager = authManager;
         this.plugin = plugin;
+        this.firstJoinRecoveryExecuted = false;
     }
     
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
+        authManager.handleJoin(player);
+
+        if (!firstJoinRecoveryExecuted) {
+            firstJoinRecoveryExecuted = true;
+            plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+                plugin.getLogger().info("PlayerJoinListener: executing automatic Harry NPC reset after first player joined.");
+                harryNPCManager.resetAllNPCs(plugin.getServer().getConsoleSender());
+            }, 40L);
+        }
         
         // Teleport to spawnpoint after a short delay to ensure player is fully loaded
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
@@ -58,8 +75,13 @@ public class PlayerJoinListener implements Listener {
                 
                 // Check if spawn location exists
                 if (spawnpointManager.getSpawnpointLocation() != null) {
-                    plugin.getLogger().info("PlayerJoinListener: Spawn is configured, giving lobby inventory to " + player.getName());
-                    lobbyManager.giveLobbyInventoryToPlayer(player, true); // Always set Adventure mode in spawn
+                    if (authManager.isAuthenticated(player)) {
+                        plugin.getLogger().info("PlayerJoinListener: Spawn is configured, giving lobby inventory to " + player.getName());
+                        lobbyManager.giveLobbyInventoryToPlayer(player, true); // Always set Adventure mode in spawn
+                    } else {
+                        plugin.getLogger().info("PlayerJoinListener: Waiting for authentication before giving lobby inventory to " + player.getName());
+                        authManager.sendAuthReminder(player);
+                    }
                 } else {
                     plugin.getLogger().warning("PlayerJoinListener: Spawn location is NULL! Cannot give lobby inventory to " + player.getName());
                 }
@@ -67,7 +89,9 @@ public class PlayerJoinListener implements Listener {
             
             // Play welcome music after inventory is given
             plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-                SpawnpointEffects.playWelcomeMelody(player, plugin);
+                if (authManager.isAuthenticated(player)) {
+                    SpawnpointEffects.playWelcomeMelody(player, plugin);
+                }
             }, 30L); // 1.5 seconds delay
             
         }, 5L); // 0.25 seconds delay to ensure player is loaded

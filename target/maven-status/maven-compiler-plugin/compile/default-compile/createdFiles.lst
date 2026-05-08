@@ -32,8 +32,10 @@ com\seminario\plugin\manager\TutorialSQLPresentationManager$Placement.class
 com\seminario\plugin\model\MenuZone.class
 com\seminario\plugin\util\SQLResultBook.class
 com\seminario\plugin\manager\SQLBattleManager.class
+com\seminario\plugin\commands\AuthCommand.class
 com\seminario\plugin\sql\battle\BattleSQLDatabase.class
 com\seminario\plugin\sql\battle\BattleSQLDatabase$InventoryItemRow.class
+com\seminario\plugin\listener\AuthListener.class
 com\seminario\plugin\model\FireworkTrigger.class
 com\seminario\plugin\listener\PostTestListener.class
 com\seminario\plugin\model\Survey.class
@@ -83,6 +85,7 @@ com\seminario\plugin\sql\context\SQLQueryPolicy.class
 com\seminario\plugin\sql\battle\wave\BattleWaveDefinition.class
 com\seminario\plugin\listener\QuestListener.class
 com\seminario\plugin\commands\QuestPlayerCommand.class
+com\seminario\plugin\manager\AuthManager.class
 com\seminario\plugin\model\QuestDefinition.class
 com\seminario\plugin\listener\LaboratoryListener.class
 com\seminario\plugin\sql\context\SQLContext.class

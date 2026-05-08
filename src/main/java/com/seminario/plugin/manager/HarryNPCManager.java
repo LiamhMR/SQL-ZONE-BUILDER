@@ -15,6 +15,7 @@ import org.bukkit.Color;
 import org.bukkit.FireworkEffect;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Firework;
@@ -62,6 +63,8 @@ public class HarryNPCManager {
      * Create a new Harry NPC at the specified location
      */
     public boolean createNPC(String npcId, String name, Location location, Player creator) {
+        ensureNPCsLoaded();
+
         if (npcs.containsKey(npcId)) {
             return false; // NPC with this ID already exists
         }
@@ -357,6 +360,8 @@ public class HarryNPCManager {
      * Get all NPCs
      */
     public Map<String, HarryNPC> getAllNPCs() {
+        ensureNPCsLoaded();
+        resolveNPCWorlds();
         return new HashMap<>(npcs);
     }
 
@@ -410,6 +415,44 @@ public class HarryNPCManager {
         
         player.sendMessage("§a✓ Harry '" + npcId + "' reseteado exitosamente.");
         player.sendMessage("§7Estado: duplicados eliminados, estado limpio, una entidad nueva spawneada.");
+        return true;
+    }
+
+    public boolean resetAllNPCs(CommandSender sender) {
+        ensureNPCsLoaded();
+        resolveNPCWorlds();
+
+        if (npcs.isEmpty()) {
+            sender.sendMessage("§eNo hay Harry NPCs cargados para resetear.");
+            return true;
+        }
+
+        int resetCount = 0;
+        int pendingCount = 0;
+
+        sender.sendMessage("§e⟳ Reseteando todos los Harry NPCs...");
+
+        for (HarryNPC npc : npcs.values()) {
+            Location location = npc.getLocation();
+            if (location.getWorld() == null) {
+                pendingCount++;
+                continue;
+            }
+
+            cleanupAllEntitiesAtLocation(location, npc.getName());
+            npc.resetLines();
+            npc.setVisible(true);
+            npc.setVillager(null);
+            npc.setHologramStand(null);
+            spawnNPCEntity(npc);
+            resetCount++;
+        }
+
+        sender.sendMessage("§a✓ Harry NPCs reseteados: " + resetCount);
+        if (pendingCount > 0) {
+            sender.sendMessage("§eHarry NPCs pendientes por mundo no cargado: " + pendingCount);
+        }
+
         return true;
     }
 
@@ -478,6 +521,9 @@ public class HarryNPCManager {
      * Spawn all NPCs when plugin starts or worlds load
      */
     public void spawnAllNPCs() {
+        ensureNPCsLoaded();
+        resolveNPCWorlds();
+
         // Clear existing Harry NPCs in the world before spawning new ones
         cleanupExistingHarryNPCs();
         
@@ -547,7 +593,7 @@ public class HarryNPCManager {
                     // Check if this hologram is near any Harry NPC location
                     boolean isNearHarryLocation = false;
                     for (HarryNPC npc : npcs.values()) {
-                        if (npc.getLocation().getWorld().equals(world)) {
+                        if (npc.getLocation().getWorld() != null && npc.getLocation().getWorld().equals(world)) {
                             double distance = npc.getLocation().distance(armorStand.getLocation());
                             // Only consider holograms within 4 blocks of a Harry NPC location
                             if (distance <= 4.0) {
@@ -612,15 +658,44 @@ public class HarryNPCManager {
             if (loadedNPCs != null) {
                 npcs.clear();
                 for (Map.Entry<String, HarryNPC> entry : loadedNPCs.entrySet()) {
-                    HarryNPC npc = entry.getValue();
-                    if (npc.getLocation().getWorld() != null) {
-                        npcs.put(entry.getKey(), npc);
-                    }
+                    npcs.put(entry.getKey(), entry.getValue());
                 }
                 LOGGER.info("Loaded " + npcs.size() + " Harry NPCs");
             }
         } catch (Exception e) {
             LOGGER.severe("Failed to load Harry NPCs: " + e.getMessage());
+        }
+    }
+
+    private void ensureNPCsLoaded() {
+        if (!npcs.isEmpty() || !dataFile.exists()) {
+            return;
+        }
+
+        loadNPCs();
+        resolveNPCWorlds();
+    }
+
+    private void resolveNPCWorlds() {
+        for (HarryNPC npc : npcs.values()) {
+            if (npc.getLocation().getWorld() != null || npc.getWorldName() == null) {
+                continue;
+            }
+
+            org.bukkit.World world = Bukkit.getWorld(npc.getWorldName());
+            if (world == null) {
+                continue;
+            }
+
+            Location location = npc.getLocation();
+            npc.setLocation(new Location(
+                world,
+                location.getX(),
+                location.getY(),
+                location.getZ(),
+                location.getYaw(),
+                location.getPitch()
+            ));
         }
     }
 }

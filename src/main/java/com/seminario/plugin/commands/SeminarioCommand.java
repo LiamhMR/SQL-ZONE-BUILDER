@@ -2,10 +2,12 @@ package com.seminario.plugin.commands;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -21,6 +23,7 @@ import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 
 import com.seminario.plugin.config.ConfigManager;
+import com.seminario.plugin.manager.AuthManager;
 import com.seminario.plugin.manager.HarryNPCManager;
 import com.seminario.plugin.manager.LobbyManager;
 import com.seminario.plugin.manager.QuestManager;
@@ -30,6 +33,7 @@ import com.seminario.plugin.manager.SlideManager;
 import com.seminario.plugin.manager.SpawnpointManager;
 import com.seminario.plugin.manager.SurveyManager;
 import com.seminario.plugin.model.FireworkTrigger;
+import com.seminario.plugin.model.HarryNPC;
 import com.seminario.plugin.model.MenuType;
 import com.seminario.plugin.model.MenuZone;
 import com.seminario.plugin.model.SQLBattleWorld;
@@ -57,9 +61,10 @@ public class SeminarioCommand implements CommandExecutor, TabCompleter {
     private final QuestManager questManager;
     private final com.seminario.plugin.manager.FireworkManager fireworkManager;
     private final HarryNPCManager harryNPCManager;
+    private final AuthManager authManager;
     private com.seminario.plugin.manager.FixSlideManager fixSlideManager;
     
-    public SeminarioCommand(ConfigManager configManager, SlideManager slideManager, SQLDungeonManager sqlDungeonManager, SQLBattleManager sqlBattleManager, SpawnpointManager spawnpointManager, LobbyManager lobbyManager, SurveyManager surveyManager, QuestManager questManager, com.seminario.plugin.manager.FireworkManager fireworkManager, HarryNPCManager harryNPCManager) {
+    public SeminarioCommand(ConfigManager configManager, SlideManager slideManager, SQLDungeonManager sqlDungeonManager, SQLBattleManager sqlBattleManager, SpawnpointManager spawnpointManager, LobbyManager lobbyManager, SurveyManager surveyManager, QuestManager questManager, com.seminario.plugin.manager.FireworkManager fireworkManager, HarryNPCManager harryNPCManager, AuthManager authManager) {
         this.configManager = configManager;
         this.slideManager = slideManager;
         this.sqlDungeonManager = sqlDungeonManager;
@@ -70,6 +75,7 @@ public class SeminarioCommand implements CommandExecutor, TabCompleter {
         this.questManager = questManager;
         this.fireworkManager = fireworkManager;
         this.harryNPCManager = harryNPCManager;
+        this.authManager = authManager;
     }
     
     /**
@@ -135,6 +141,10 @@ public class SeminarioCommand implements CommandExecutor, TabCompleter {
                 return handleFireworkCommand(sender, args);
             case "newharry":
                 return handleNewHarryCommand(sender, args);
+            case "allharry":
+                return handleAllHarryCommand(sender, args);
+            case "invitation":
+                return handleInvitationCommand(sender, args);
             case "harry":
                 return handleHarryCommand(sender, args);
             case "reload":
@@ -1116,6 +1126,10 @@ public class SeminarioCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage(ChatColor.WHITE + "/sm chestport edit <zona> <x> <y> <z> <mundo>" + ChatColor.GRAY + " - Configurar teleport");
         sender.sendMessage(ChatColor.WHITE + "/sm createfire <color>" + ChatColor.GRAY + " - Crear fuego artificial trigger");
         sender.sendMessage(ChatColor.WHITE + "/sm newharry <nombre>" + ChatColor.GRAY + " - Crear NPC profesor Harry");
+        sender.sendMessage(ChatColor.WHITE + "/sm invitation create <codigo> <usos>" + ChatColor.GRAY + " - Crear invitación");
+        sender.sendMessage(ChatColor.WHITE + "/sm invitation list" + ChatColor.GRAY + " - Listar invitaciones");
+        sender.sendMessage(ChatColor.WHITE + "/sm invitation remove <codigo>" + ChatColor.GRAY + " - Eliminar invitación");
+        sender.sendMessage(ChatColor.WHITE + "/sm allharry reset" + ChatColor.GRAY + " - Resetear todos los Harry NPCs");
         sender.sendMessage(ChatColor.WHITE + "/sm harry <nombre> addLine <texto>" + ChatColor.GRAY + " - Agregar línea de diálogo");
         sender.sendMessage(ChatColor.WHITE + "/sm spawnpoint set" + ChatColor.GRAY + " - Establecer spawnpoint del servidor");
         sender.sendMessage(ChatColor.WHITE + "/sm remove <nombre>" + ChatColor.GRAY + " - Eliminar zona");
@@ -1166,9 +1180,23 @@ public class SeminarioCommand implements CommandExecutor, TabCompleter {
         }
         
         if (args.length == 1) {
-            return Arrays.asList("create", "remove", "list", "info", "set", "slide", "fixslide", "disabled", "enabled", "reload", "sql", "sqlbattle", "spawnpoint", "lobby", "survey", "defaultsurvey", "createfire", "createcreeperfire", "firework", "newharry", "harry", "start", "test", "debug", "chestport", "db")
+            return Arrays.asList("create", "remove", "list", "info", "set", "slide", "fixslide", "disabled", "enabled", "reload", "sql", "sqlbattle", "spawnpoint", "lobby", "survey", "defaultsurvey", "createfire", "createcreeperfire", "firework", "newharry", "allharry", "invitation", "harry", "start", "test", "debug", "chestport", "db")
                 .stream()
                 .filter(s -> s.toLowerCase().startsWith(args[0].toLowerCase()))
+                .collect(Collectors.toList());
+        }
+
+        if (args[0].equalsIgnoreCase("allharry") && args.length == 2) {
+            return Arrays.asList("reset")
+                .stream()
+                .filter(s -> s.toLowerCase().startsWith(args[1].toLowerCase()))
+                .collect(Collectors.toList());
+        }
+
+        if (args[0].equalsIgnoreCase("invitation") && args.length == 2) {
+            return Arrays.asList("create", "list", "remove")
+                .stream()
+                .filter(s -> s.toLowerCase().startsWith(args[1].toLowerCase()))
                 .collect(Collectors.toList());
         }
         
@@ -1566,9 +1594,9 @@ public class SeminarioCommand implements CommandExecutor, TabCompleter {
         
         if (args[0].equalsIgnoreCase("harry")) {
             if (args.length == 2) {
-                // Suggest existing Harry NPC IDs
-                return harryNPCManager.getAllNPCs().keySet()
-                    .stream()
+                return Stream.concat(
+                        Stream.of("list"),
+                        harryNPCManager.getAllNPCs().keySet().stream())
                     .filter(s -> s.toLowerCase().startsWith(args[1].toLowerCase()))
                     .collect(Collectors.toList());
             }
@@ -3575,6 +3603,83 @@ public class SeminarioCommand implements CommandExecutor, TabCompleter {
         boolean success = harryNPCManager.createNPC(npcId, displayName, player.getLocation(), player);
         return success;
     }
+
+    private boolean handleAllHarryCommand(CommandSender sender, String[] args) {
+        if (args.length < 2) {
+            sender.sendMessage("§cUso: /sm allharry reset");
+            return true;
+        }
+
+        String action = args[1].toLowerCase();
+        if (!action.equals("reset")) {
+            sender.sendMessage("§cAcción desconocida: " + action);
+            sender.sendMessage("§7Acciones válidas: reset");
+            return true;
+        }
+
+        return harryNPCManager.resetAllNPCs(sender);
+    }
+
+    private boolean handleInvitationCommand(CommandSender sender, String[] args) {
+        if (!(sender instanceof Player player) || !player.isOp()) {
+            sender.sendMessage("§cSolo un usuario OP autenticado puede usar este comando.");
+            return true;
+        }
+
+        if (args.length < 2) {
+            sender.sendMessage("§cUso: /sm invitation <create|list|remove> [args]");
+            return true;
+        }
+
+        String action = args[1].toLowerCase();
+        switch (action) {
+            case "create":
+                if (args.length < 4) {
+                    sender.sendMessage("§cUso: /sm invitation create <invitation_key> <usos>");
+                    return true;
+                }
+                try {
+                    int uses = Integer.parseInt(args[3]);
+                    if (uses <= 0) {
+                        sender.sendMessage("§cLos usos deben ser mayores que cero.");
+                        return true;
+                    }
+                    if (!authManager.createInvitation(args[2], uses)) {
+                        sender.sendMessage("§cYa existe una invitación con esa clave.");
+                        return true;
+                    }
+                    sender.sendMessage("§aInvitación creada: §f" + args[2] + " §7(usos: " + uses + ")");
+                    return true;
+                } catch (NumberFormatException e) {
+                    sender.sendMessage("§cLos usos deben ser un número válido.");
+                    return true;
+                }
+            case "list":
+                Map<String, Integer> invitations = authManager.listInvitations();
+                if (invitations.isEmpty()) {
+                    sender.sendMessage("§eNo hay invitaciones registradas.");
+                    return true;
+                }
+                sender.sendMessage("§6=== Invitation Keys ===");
+                invitations.forEach((key, uses) -> sender.sendMessage("§f- §b" + key + " §7usos restantes: §f" + uses));
+                return true;
+            case "remove":
+                if (args.length < 3) {
+                    sender.sendMessage("§cUso: /sm invitation remove <invitation_key>");
+                    return true;
+                }
+                if (!authManager.removeInvitation(args[2])) {
+                    sender.sendMessage("§cNo existe esa invitación.");
+                    return true;
+                }
+                sender.sendMessage("§aInvitación eliminada: §f" + args[2]);
+                return true;
+            default:
+                sender.sendMessage("§cAcción desconocida: " + action);
+                sender.sendMessage("§7Acciones válidas: create, list, remove");
+                return true;
+        }
+    }
     
     /**
      * Handle harry command for managing Harry NPCs
@@ -3584,9 +3689,14 @@ public class SeminarioCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage("§cEste comando solo puede ser usado por jugadores.");
             return true;
         }
+
+        if (args.length >= 2 && args[1].equalsIgnoreCase("list")) {
+            return handleHarryList((Player) sender);
+        }
         
         if (args.length < 2) {
             sender.sendMessage("§cUso: /sm harry <nombre> <acción>");
+            sender.sendMessage("§7También puedes usar: /sm harry list");
             sender.sendMessage("§7Acciones disponibles:");
             sender.sendMessage("§7  addLine <texto> - Agregar línea de diálogo");
             sender.sendMessage("§7  editLine <número> <texto> - Editar línea específica");
@@ -3662,6 +3772,28 @@ public class SeminarioCommand implements CommandExecutor, TabCompleter {
      */
     private boolean handleHarryLines(Player player, String npcId) {
         return harryNPCManager.showLines(npcId, player);
+    }
+
+    private boolean handleHarryList(Player player) {
+        Map<String, HarryNPC> loadedNPCs = harryNPCManager.getAllNPCs();
+        if (loadedNPCs.isEmpty()) {
+            player.sendMessage("§eNo hay Harry NPCs cargados.");
+            return true;
+        }
+
+        player.sendMessage("§6=== Harry NPCs cargados ===");
+        loadedNPCs.values().stream()
+            .sorted(Comparator.comparing(HarryNPC::getId, String.CASE_INSENSITIVE_ORDER))
+            .forEach(npc -> {
+                Location location = npc.getLocation();
+                String worldName = npc.getWorldName() != null ? npc.getWorldName() : "desconocido";
+                String worldStatus = location.getWorld() != null ? "§aCARGADO" : "§cPENDIENTE";
+                player.sendMessage("§f- §b" + npc.getId() + " §7(" + npc.getName() + "§7) "
+                    + worldStatus + " §7mundo: §f" + worldName
+                    + " §7@ §f" + location.getBlockX() + "," + location.getBlockY() + "," + location.getBlockZ()
+                    + " §7líneas: §f" + npc.getTotalLines());
+            });
+        return true;
     }
     
     /**

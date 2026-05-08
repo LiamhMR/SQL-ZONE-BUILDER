@@ -3,8 +3,10 @@ package com.seminario.plugin;
 import org.bukkit.configuration.serialization.ConfigurationSerialization;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import com.seminario.plugin.commands.AuthCommand;
 import com.seminario.plugin.commands.SeminarioCommand;
 import com.seminario.plugin.config.ConfigManager;
+import com.seminario.plugin.listener.AuthListener;
 import com.seminario.plugin.listener.ChestportGUIListener;
 import com.seminario.plugin.listener.FireworkTriggerListener;
 import com.seminario.plugin.listener.HarryNPCListener;
@@ -14,6 +16,7 @@ import com.seminario.plugin.listener.QuestListener;
 import com.seminario.plugin.listener.SQLBattlePreparationListener;
 import com.seminario.plugin.listener.SQLBattleWaveListener;
 import com.seminario.plugin.listener.SQLEntryListener;
+import com.seminario.plugin.manager.AuthManager;
 import com.seminario.plugin.manager.FireworkManager;
 import com.seminario.plugin.manager.FixSlideManager;
 import com.seminario.plugin.manager.HarryNPCManager;
@@ -50,6 +53,7 @@ public class App extends JavaPlugin {
     private SurveyManager surveyManager;
     private QuestManager questManager;
     private FireworkManager fireworkManager;
+    private AuthManager authManager;
     private HarryNPCManager harryNPCManager;
     private TutorialSQLPresentationManager tutorialSQLPresentationManager;
     private PlayerEventListener playerEventListener;
@@ -89,6 +93,7 @@ public class App extends JavaPlugin {
         lobbyManager.setSQLBattleManager(sqlBattleManager);
         lobbyManager.setQuestManager(questManager);
         fireworkManager = new FireworkManager(this);
+        authManager = new AuthManager(this);
         harryNPCManager = new HarryNPCManager(this);
         tutorialSQLPresentationManager = new TutorialSQLPresentationManager(this);
         
@@ -143,7 +148,7 @@ public class App extends JavaPlugin {
         playerEventListener.setLaboratoryListener(laboratoryListener);
         
         // Register player join listener for spawnpoint welcome (always teleports to spawn)
-        playerJoinListener = new com.seminario.plugin.listener.PlayerJoinListener(spawnpointManager, lobbyManager, this);
+        playerJoinListener = new com.seminario.plugin.listener.PlayerJoinListener(spawnpointManager, lobbyManager, harryNPCManager, authManager, this);
         getServer().getPluginManager().registerEvents(playerJoinListener, this);
         
         // Register world change listener for lobby inventory on world switch
@@ -166,9 +171,12 @@ public class App extends JavaPlugin {
         
         // Register Harry NPC listener for NPC interactions
         getServer().getPluginManager().registerEvents(new HarryNPCListener(harryNPCManager), this);
+
+        // Register authentication listener
+        getServer().getPluginManager().registerEvents(new AuthListener(authManager), this);
         
         // Register commands
-        SeminarioCommand seminarioCommand = new SeminarioCommand(configManager, slideManager, sqlDungeonManager, sqlBattleManager, spawnpointManager, lobbyManager, surveyManager, questManager, fireworkManager, harryNPCManager);
+        SeminarioCommand seminarioCommand = new SeminarioCommand(configManager, slideManager, sqlDungeonManager, sqlBattleManager, spawnpointManager, lobbyManager, surveyManager, questManager, fireworkManager, harryNPCManager, authManager);
         seminarioCommand.setFixSlideManager(fixSlideManager); // Connect FixSlideManager to commands
         var smCommand = getCommand("sm");
         if (smCommand != null) {
@@ -180,6 +188,22 @@ public class App extends JavaPlugin {
 
         // Inject QuestManager into ChestportGUI for requirement validation
         com.seminario.plugin.gui.ChestportGUI.setQuestManager(questManager);
+        AuthCommand authCommand = new AuthCommand(authManager, spawnpointManager, lobbyManager, this);
+        var registerCommand = getCommand("register");
+        if (registerCommand != null) {
+            registerCommand.setExecutor(authCommand);
+            registerCommand.setTabCompleter(authCommand);
+        } else {
+            getLogger().severe("Failed to register /register command!");
+        }
+
+        var loginCommand = getCommand("login");
+        if (loginCommand != null) {
+            loginCommand.setExecutor(authCommand);
+            loginCommand.setTabCompleter(authCommand);
+        } else {
+            getLogger().severe("Failed to register /login command!");
+        }
 
         
         getLogger().info("Menu zones and slideshow system initialized successfully!");

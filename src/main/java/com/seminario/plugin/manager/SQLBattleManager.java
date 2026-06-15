@@ -1512,7 +1512,7 @@ public class SQLBattleManager {
 
     private void showPreparationSuggestions(Player player) {
         player.sendMessage(ChatColor.GOLD + "=== Sugerencias SQL (Prewave) ===");
-        player.sendMessage(ChatColor.GRAY + "Haz click en una sugerencia para ejecutarla automáticamente (consume AP)." );
+        player.sendMessage(ChatColor.GRAY + "Haz click en una sugerencia para copiarla al chat y editarla antes de enviarla." );
         for (int id = 1; id <= 4; id++) {
             String title = getSuggestionTitleById(id);
             String query = getSuggestedQueryById(id);
@@ -1522,8 +1522,8 @@ public class SQLBattleManager {
 
             Component line = Component.text("[" + id + "] ", NamedTextColor.AQUA)
                 .append(Component.text(title, NamedTextColor.WHITE))
-                .append(Component.text("  (click)", NamedTextColor.GREEN))
-                .clickEvent(ClickEvent.runCommand("/sm sqlbattle suggest " + id));
+                .append(Component.text("  (copiar al chat)", NamedTextColor.GREEN))
+                .clickEvent(ClickEvent.suggestCommand(query));
 
             player.sendMessage(line);
             player.sendMessage(ChatColor.DARK_GRAY + query);

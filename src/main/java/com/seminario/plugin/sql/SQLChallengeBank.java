@@ -42,56 +42,56 @@ public class SQLChallengeBank {
     // ===== LEVEL 1: BASIC =====
     private static final List<Challenge> BASIC_CHALLENGES = Arrays.asList(
         new Challenge(
-            "Muestra los nombres de todos los jugadores del mundo 'overworld'",
+            "Muestra los 'nombres' de todos los jugadores del mundo 'overworld'",
             "SELECT nombre FROM Jugadores WHERE mundo = 'overworld'",
             "Usa SELECT nombre FROM Jugadores",
             "Filtra por mundo con WHERE",
             "Usa comillas simples para el texto: 'overworld'"
         ),
         new Challenge(
-            "Lista todos los jugadores que tienen nivel mayor a 20",
+            "Lista los nombres de todos los jugadores que tienen nivel mayor a 20",
             "SELECT nombre FROM Jugadores WHERE nivel > 20",
             "SELECT nombre FROM la tabla Jugadores",
             "WHERE nivel > [número]",
             "El número es 20"
         ),
         new Challenge(
-            "Encuentra jugadores que tienen más de 50 esmeraldas",
+            "Encuentra los nombres de jugadores que tienen más de 50 esmeraldas",
             "SELECT nombre FROM Jugadores WHERE esmeraldas > 50",
             "Consulta la tabla Jugadores",
             "Filtra por la columna esmeraldas",
             "Usa el operador > para 'mayor que'"
         ),
         new Challenge(
-            "Muestra todos los items del inventario que son 'épico'",
+            "Muestra todos los 'items' del inventario que son 'épico'",
             "SELECT item FROM Inventarios WHERE rareza = 'épico'",
             "SELECT item FROM Inventarios",
             "WHERE rareza = [valor]",
             "El valor es 'épico' entre comillas"
         ),
         new Challenge(
-            "Lista todos los jugadores que tienen menos de 30 oro",
+            "Lista los nombres de todos los jugadores que tienen menos de 30 oro",
             "SELECT nombre FROM Jugadores WHERE oro < 30",
             "Usa SELECT nombre FROM Jugadores",
             "WHERE oro < [número]",
             "El número es 30"
         ),
         new Challenge(
-            "Encuentra jugadores que tienen exactamente 25 nivel",
+            "Encuentra los 'nombres' de jugadores que tienen exactamente 25 nivel",
             "SELECT nombre FROM Jugadores WHERE nivel = 25",
             "Usa el operador = para igualdad exacta",
             "WHERE nivel = [número]",
             "El número es 25"
         ),
         new Challenge(
-            "Muestra los items del inventario que NO son raros",
+            "Muestra los 'items' del inventario que NO son raros",
             "SELECT item FROM Inventarios WHERE rareza != 'raro'",
             "Usa != para 'no igual'",
             "WHERE rareza != [valor]",
             "El valor es 'raro' entre comillas"
         ),
         new Challenge(
-            "Lista jugadores del mundo 'nether' o 'end'",
+            "Lista los nombres de jugadores del mundo 'nether' o 'end'",
             "SELECT nombre FROM Jugadores WHERE mundo = 'nether' OR mundo = 'end'",
             "Usa OR para múltiples condiciones",
             "WHERE mundo = 'nether' OR mundo = 'end'",
@@ -102,28 +102,28 @@ public class SQLChallengeBank {
     // ===== LEVEL 2: INTERMEDIATE =====
     private static final List<Challenge> INTERMEDIATE_CHALLENGES = Arrays.asList(
         new Challenge(
-            "Lista los jugadores ordenados por cantidad de diamantes (mayor a menor)",
+            "Lista los 'nombres' de jugadores ordenados por cantidad de 'diamantes' (mayor a menor)",
             "SELECT nombre, diamantes FROM Jugadores ORDER BY diamantes DESC",
             "Usa ORDER BY para ordenar",
             "DESC significa descendente (mayor a menor)",
             "Incluye tanto nombre como diamantes en SELECT"
         ),
         new Challenge(
-            "Encuentra los 3 jugadores con más oro",
+            "Encuentra los 'nombres' de los 3 jugadores con más 'oro'",
             "SELECT nombre, oro FROM Jugadores ORDER BY oro DESC LIMIT 3",
             "ORDER BY oro DESC para ordenar por oro",
             "LIMIT [número] para limitar resultados",
             "El número es 3"
         ),
         new Challenge(
-            "Muestra jugadores que tienen entre 10 y 200 diamantes",
+            "Muestra los 'nombres' de jugadores que tienen entre 10 y 200 'diamantes'",
             "SELECT nombre, diamantes FROM Jugadores WHERE diamantes BETWEEN 10 AND 200",
             "Usa BETWEEN para rangos",
             "La sintaxis es: BETWEEN valor1 AND valor2",
             "Los valores son 10 y 200"
         ),
         new Challenge(
-            "Lista items encantados del inventario ordenados por cantidad",
+            "Lista 'items' encantados del inventario ordenados por 'cantidad'",
             "SELECT item, cantidad FROM Inventarios WHERE encantado = true ORDER BY cantidad DESC",
             "WHERE encantado = true para items encantados",
             "ORDER BY cantidad DESC para ordenar",
@@ -137,21 +137,21 @@ public class SQLChallengeBank {
             "Usa OR para múltiples condiciones"
         ),
         new Challenge(
-            "Muestra los 5 jugadores con menos esmeraldas",
+            "Muestra los 5 jugadores con menos esmeraldas. (Lista nombres y esmeraldas)",
             "SELECT nombre, esmeraldas FROM Jugadores ORDER BY esmeraldas ASC LIMIT 5",
             "ORDER BY esmeraldas ASC para ordenar ascendente",
             "LIMIT 5 para los primeros 5 resultados",
             "ASC significa ascendente (menor a mayor)"
         ),
         new Challenge(
-            "Lista jugadores con nivel entre 15 y 30",
+            "Lista jugadores con nivel entre 15 y 30. (Incluye nombre y nivel)",
             "SELECT nombre, nivel FROM Jugadores WHERE nivel BETWEEN 15 AND 30",
             "BETWEEN incluye los valores límite",
             "WHERE nivel BETWEEN 15 AND 30",
             "Incluye nombre y nivel en SELECT"
         ),
         new Challenge(
-            "Encuentra items que contengan la palabra 'espada'",
+            "Encuentra 'items' que contengan la palabra 'espada' ",
             "SELECT item FROM Inventarios WHERE item LIKE '%espada%'",
             "LIKE '%espada%' busca la palabra en cualquier parte",
             "% antes y después busca en cualquier posición",

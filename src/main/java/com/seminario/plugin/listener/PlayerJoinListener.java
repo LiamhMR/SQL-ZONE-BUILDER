@@ -63,6 +63,15 @@ public class PlayerJoinListener implements Listener {
             player.sendMessage(ChatColor.GOLD + "✨ ¡Bienvenido " + player.getName() + "! ✨");
             player.sendMessage(ChatColor.YELLOW + "Has sido teletransportado al spawn del servidor.");
             player.sendMessage("");
+            //INVITACION DE DISCORD
+            player.sendMessage(ChatColor.AQUA + "Únete a nuestro Discord para info y soporte.");
+            player.sendMessage(ChatColor.BLUE + "https://discord.gg/Xuq8v3RP5");
+            player.sendMessage("");
+            //Introducción explicatoria de que este servidor está orientado a la prueba de SQL por motivo de proyecto de título
+            player.sendMessage(ChatColor.GREEN + "Este servidor está desarrollado por motivo de nuestro Proyecto de título.");
+            player.sendMessage(ChatColor.GREEN + "Es ideal que respondas tanto el pretest como el postest a consciencia para que nuestro proyecto tenga mejores resultados.");
+            player.sendMessage(ChatColor.GREEN + "Cualquier duda o comentario, no dudes en contactarnos en nuestro Discord.");
+            player.sendMessage("");
             
             // ALWAYS give lobby inventory after teleport with longer delay
             plugin.getServer().getScheduler().runTaskLater(plugin, () -> {

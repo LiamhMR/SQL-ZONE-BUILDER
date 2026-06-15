@@ -472,7 +472,7 @@ public class SQLDungeonManager {
         // Dramatic message
         player.sendMessage(Component.text("", NamedTextColor.WHITE));
         player.sendMessage(Component.text("⚡ ¡ZEUS ESTÁ MOLESTO! ⚡", NamedTextColor.GOLD));
-        player.sendMessage(Component.text("Has fallado 3 veces seguidas...", NamedTextColor.RED));
+        player.sendMessage(Component.text("Estás fallando demasiado...", NamedTextColor.RED));
         player.sendMessage(Component.text("", NamedTextColor.WHITE));
         player.sendMessage(Component.text("🎁 Pero aquí tienes una pista divina:", NamedTextColor.AQUA));
         
@@ -1359,8 +1359,9 @@ public class SQLDungeonManager {
             playerYellowHeartsLost.put(player, yellowLost);
             
             updatePlayerHealth(player);
-            player.sendMessage(Component.text("¡¡ Perdiste 2 vidas amarillas!", NamedTextColor.YELLOW));
             
+            player.sendMessage(Component.text("¡¡ Perdiste 2 vidas amarillas!", NamedTextColor.YELLOW));
+            handleThirdFailedAttempt(player); // Check if we need to handle 3rd failed attempt
             // Check if 6 yellow hearts have been lost (time to lose a red heart)
             if (yellowLost >= 6) {
                 // Reset yellow hearts lost counter

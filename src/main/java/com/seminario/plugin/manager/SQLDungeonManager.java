@@ -144,6 +144,51 @@ public class SQLDungeonManager {
     }
     
     /**
+     * Clona la configuración de un SQLDungeon existente a un nuevo mundo.
+     * Se copian todos los niveles con sus coordenadas; la referencia de mundo
+     * en cada Location se reemplaza por el mundo destino.
+     *
+     * @param sourceWorldName Nombre del mundo origen (ya configurado como SQLDungeon)
+     * @param destWorldName   Nombre del mundo destino (debe estar cargado, no ser SQLDungeon)
+     * @return true si el clon se completó exitosamente
+     */
+    public boolean cloneSQLDungeon(String sourceWorldName, String destWorldName) {
+        SQLDungeonWorld source = configManager.getSQLDungeon(sourceWorldName);
+        if (source == null) return false;
+
+        org.bukkit.World destWorld = org.bukkit.Bukkit.getWorld(destWorldName);
+        if (destWorld == null) return false;
+
+        if (configManager.isSQLDungeon(destWorldName)) return false;
+
+        SQLDungeonWorld dest = new SQLDungeonWorld(destWorldName);
+
+        for (com.seminario.plugin.model.SQLLevel srcLevel : source.getLevels().values()) {
+            com.seminario.plugin.model.SQLLevel destLevel = new com.seminario.plugin.model.SQLLevel(
+                srcLevel.getLevelNumber(),
+                srcLevel.getDifficulty(),
+                cloneDungeonLocation(srcLevel.getCheckpointLocation(), destWorld)
+            );
+            destLevel.setEntryLocation(cloneDungeonLocation(srcLevel.getEntryLocation(), destWorld));
+            destLevel.setChallenge(srcLevel.getChallenge());
+            destLevel.setExpectedQuery(srcLevel.getExpectedQuery());
+            destLevel.setHint1(srcLevel.getHint1());
+            destLevel.setHint2(srcLevel.getHint2());
+            destLevel.setHint3(srcLevel.getHint3());
+            dest.getLevels().put(destLevel.getLevelNumber(), destLevel);
+        }
+
+        configManager.addSQLDungeon(dest);
+        logger.info("Cloned SQL Dungeon config from '" + sourceWorldName + "' to '" + destWorldName + "'");
+        return true;
+    }
+
+    private org.bukkit.Location cloneDungeonLocation(org.bukkit.Location src, org.bukkit.World destWorld) {
+        if (src == null) return null;
+        return new org.bukkit.Location(destWorld, src.getX(), src.getY(), src.getZ(), src.getYaw(), src.getPitch());
+    }
+
+    /**
      * Check if a world is a SQL dungeon
      * @param worldName The world name
      * @return true if it's a SQL dungeon world

@@ -8,16 +8,19 @@ import org.bukkit.entity.Player;
 import com.seminario.plugin.model.MenuZone;
 
 /**
- * Utility class for detecting when players are within menu zones
- * Includes vertical tolerance for detecting players "above" zones
+ * Utility class for detecting when players are within menu zones.
+ * Detection uses the real 3D bounding box of the zone.
+ * For flat zones (pos1.y == pos2.y), a +2 block upward margin is added
+ * so that a player standing on the floor block (minY) is still detected.
  */
 public class ZoneDetector {
     
     private static final Logger LOGGER = Logger.getLogger(ZoneDetector.class.getName());
-    
-    // Vertical tolerance: detect players 1-3 blocks above the zone
-    private static final int MIN_VERTICAL_OFFSET = 1;
-    private static final int MAX_VERTICAL_OFFSET = 3;
+
+    // Extra upward headroom added on top of maxY so a player standing on
+    // the top block of the zone (or on a flat zone's single Y level) is detected.
+    // 2 covers the full player model height (1.8 blocks, rounded up to 2).
+    private static final double PLAYER_HEIGHT_MARGIN = 2.0;
     
     /**
      * Check if a player is within a menu zone (including vertical tolerance)
@@ -31,10 +34,14 @@ public class ZoneDetector {
     }
     
     /**
-     * Check if a location is within a menu zone (including vertical tolerance)
+     * Check if a location is within a menu zone.
+     * Uses the real 3D bounding box: [minX,maxX] x [minY, maxY+PLAYER_HEIGHT_MARGIN] x [minZ,maxZ].
+     * The upward margin ensures a player standing on the top/floor block is always detected,
+     * without requiring artificial Y offsets.
+     *
      * @param location The location to check
      * @param zone The menu zone
-     * @return true if location is within the zone area (with vertical tolerance)
+     * @return true if location is within the zone volume
      */
     public static boolean isLocationInZone(Location location, MenuZone zone) {
         // Check if in same world
@@ -47,30 +54,24 @@ public class ZoneDetector {
         double maxX = Math.max(zone.getPos1().getX(), zone.getPos2().getX());
         double minZ = Math.min(zone.getPos1().getZ(), zone.getPos2().getZ());
         double maxZ = Math.max(zone.getPos1().getZ(), zone.getPos2().getZ());
-        
-        // Zone Y levels
         double minY = Math.min(zone.getPos1().getY(), zone.getPos2().getY());
         double maxY = Math.max(zone.getPos1().getY(), zone.getPos2().getY());
-        
-        // Player position
+
         double playerX = location.getX();
         double playerY = location.getY();
         double playerZ = location.getZ();
-        
-        // Check X and Z boundaries (horizontal)
-        boolean inHorizontalBounds = playerX >= minX && playerX <= maxX && 
-                                   playerZ >= minZ && playerZ <= maxZ;
-        
+
+        // Check X and Z boundaries
+        boolean inHorizontalBounds = playerX >= minX && playerX <= maxX &&
+                                     playerZ >= minZ && playerZ <= maxZ;
         if (!inHorizontalBounds) {
             return false;
         }
-        
-        // Check vertical bounds with tolerance
-        // Player should be 1-3 blocks above the zone's max Y level
-        double zoneTopY = maxY;
-        boolean inVerticalRange = playerY >= (zoneTopY + MIN_VERTICAL_OFFSET) && 
-                                playerY <= (zoneTopY + MAX_VERTICAL_OFFSET);
-        
+
+        // Check vertical bounds: player must be inside the box or standing on its top face.
+        // +PLAYER_HEIGHT_MARGIN extends the ceiling so standing on maxY is included.
+        boolean inVerticalRange = playerY >= minY && playerY <= (maxY + PLAYER_HEIGHT_MARGIN);
+
         return inVerticalRange;
     }
     
@@ -128,59 +129,5 @@ public class ZoneDetector {
             player.getName(), zone.getName(), inHorizontal, verticalDistance, inZone,
             playerLoc.getY(), zone.getPos1().getY(), zone.getPos2().getY()
         );
-    }
-    
-    /**
-     * Set custom vertical tolerance
-     */
-    private static int customMinOffset = MIN_VERTICAL_OFFSET;
-    private static int customMaxOffset = MAX_VERTICAL_OFFSET;
-    
-    /**
-     * Set custom vertical detection range
-     * @param minOffset Minimum blocks above zone
-     * @param maxOffset Maximum blocks above zone
-     */
-    public static void setVerticalTolerance(int minOffset, int maxOffset) {
-        customMinOffset = minOffset;
-        customMaxOffset = maxOffset;
-        LOGGER.info("Updated vertical tolerance: " + minOffset + " to " + maxOffset + " blocks above zone");
-    }
-    
-    /**
-     * Check if location is in zone with custom vertical tolerance
-     * @param location The location to check
-     * @param zone The menu zone
-     * @param minOffset Minimum blocks above zone
-     * @param maxOffset Maximum blocks above zone
-     * @return true if within custom range
-     */
-    public static boolean isLocationInZoneCustom(Location location, MenuZone zone, int minOffset, int maxOffset) {
-        if (!location.getWorld().equals(zone.getWorld())) {
-            return false;
-        }
-        
-        double minX = Math.min(zone.getPos1().getX(), zone.getPos2().getX());
-        double maxX = Math.max(zone.getPos1().getX(), zone.getPos2().getX());
-        double minZ = Math.min(zone.getPos1().getZ(), zone.getPos2().getZ());
-        double maxZ = Math.max(zone.getPos1().getZ(), zone.getPos2().getZ());
-        
-        double maxZoneY = Math.max(zone.getPos1().getY(), zone.getPos2().getY());
-        
-        double playerX = location.getX();
-        double playerY = location.getY();
-        double playerZ = location.getZ();
-        
-        boolean inHorizontalBounds = playerX >= minX && playerX <= maxX && 
-                                   playerZ >= minZ && playerZ <= maxZ;
-        
-        if (!inHorizontalBounds) {
-            return false;
-        }
-        
-        boolean inVerticalRange = playerY >= (maxZoneY + minOffset) && 
-                                playerY <= (maxZoneY + maxOffset);
-        
-        return inVerticalRange;
     }
 }

@@ -63,7 +63,8 @@ public class SeminarioCommand implements CommandExecutor, TabCompleter {
     private final HarryNPCManager harryNPCManager;
     private final AuthManager authManager;
     private com.seminario.plugin.manager.FixSlideManager fixSlideManager;
-    
+    private com.seminario.plugin.manager.CountHologramManager countHologramManager;
+
     public SeminarioCommand(ConfigManager configManager, SlideManager slideManager, SQLDungeonManager sqlDungeonManager, SQLBattleManager sqlBattleManager, SpawnpointManager spawnpointManager, LobbyManager lobbyManager, SurveyManager surveyManager, QuestManager questManager, com.seminario.plugin.manager.FireworkManager fireworkManager, HarryNPCManager harryNPCManager, AuthManager authManager) {
         this.configManager = configManager;
         this.slideManager = slideManager;
@@ -83,6 +84,10 @@ public class SeminarioCommand implements CommandExecutor, TabCompleter {
      */
     public void setFixSlideManager(com.seminario.plugin.manager.FixSlideManager fixSlideManager) {
         this.fixSlideManager = fixSlideManager;
+    }
+
+    public void setCountHologramManager(com.seminario.plugin.manager.CountHologramManager manager) {
+        this.countHologramManager = manager;
     }
     
     @Override
@@ -147,6 +152,8 @@ public class SeminarioCommand implements CommandExecutor, TabCompleter {
                 return handleInvitationCommand(sender, args);
             case "harry":
                 return handleHarryCommand(sender, args);
+            case "hologram":
+                return handleHologramCommand(sender, args);
             case "reload":
                 return handleReloadCommand(sender);
             case "test":
@@ -180,6 +187,8 @@ public class SeminarioCommand implements CommandExecutor, TabCompleter {
             return handleCreateSQLBattle(sender, args);
         } else if (createType.equals("quest")) {
             return handleCreateQuestCommand(sender, args);
+        } else if (createType.equals("counthologram")) {
+            return handleCreateCountHologram(sender, args);
         } else if (createType.equals("fixslide")) {
             if (!(sender instanceof Player)) {
                 sender.sendMessage(ChatColor.RED + "Este comando solo puede ser usado por jugadores.");
@@ -368,9 +377,11 @@ public class SeminarioCommand implements CommandExecutor, TabCompleter {
                 return handleSetMenuType(sender, args);
             case "requirement":
                 return handleSetRequirement(sender, args);
+            case "maxplayers":
+                return handleSetMaxPlayers(sender, args);
             default:
                 sender.sendMessage(ChatColor.RED + "Acción desconocida: " + setAction);
-                sender.sendMessage(ChatColor.GRAY + "Opciones: menutype, requirement");
+                sender.sendMessage(ChatColor.GRAY + "Opciones: menutype, requirement, maxplayers");
                 return true;
         }
     }
@@ -1180,7 +1191,7 @@ public class SeminarioCommand implements CommandExecutor, TabCompleter {
         }
         
         if (args.length == 1) {
-            return Arrays.asList("create", "remove", "list", "info", "set", "slide", "fixslide", "disabled", "enabled", "reload", "sql", "sqlbattle", "spawnpoint", "lobby", "survey", "defaultsurvey", "createfire", "createcreeperfire", "firework", "newharry", "allharry", "invitation", "harry", "start", "test", "debug", "chestport", "db")
+            return Arrays.asList("create", "remove", "list", "info", "set", "slide", "fixslide", "disabled", "enabled", "reload", "sql", "sqlbattle", "spawnpoint", "lobby", "survey", "defaultsurvey", "createfire", "createcreeperfire", "firework", "newharry", "allharry", "invitation", "harry", "hologram", "start", "test", "debug", "chestport", "db")
                 .stream()
                 .filter(s -> s.toLowerCase().startsWith(args[0].toLowerCase()))
                 .collect(Collectors.toList());
@@ -1201,22 +1212,29 @@ public class SeminarioCommand implements CommandExecutor, TabCompleter {
         }
         
         if (args.length == 2) {
+            if (args[0].equalsIgnoreCase("hologram")) {
+                return Arrays.asList("list", "move", "delete")
+                    .stream()
+                    .filter(s -> s.toLowerCase().startsWith(args[1].toLowerCase()))
+                    .collect(Collectors.toList());
+            }
+
             if (args[0].equalsIgnoreCase("create")) {
-                return Arrays.asList("menuzone", "fixslide", "SQLDUNGEON", "SQLBATTLE", "quest")
+                return Arrays.asList("menuzone", "fixslide", "SQLDUNGEON", "SQLBATTLE", "quest", "counthologram")
                     .stream()
                     .filter(s -> s.toLowerCase().startsWith(args[1].toLowerCase()))
                     .collect(Collectors.toList());
             }
 
             if (args[0].equalsIgnoreCase("sqlbattle")) {
-                return Arrays.asList("here", "start", "stop", "difficulty", "reset", "forcestage", "respawncheckpoint", "stopgamemode", "continuegamemode", "get", "suggest", "debug", "list", "info", "ranking", "remove")
+                return Arrays.asList("here", "start", "stop", "difficulty", "reset", "forcestage", "respawncheckpoint", "stopgamemode", "continuegamemode", "get", "suggest", "debug", "list", "info", "ranking", "remove", "clone")
                     .stream()
                     .filter(s -> s.toLowerCase().startsWith(args[1].toLowerCase()))
                     .collect(Collectors.toList());
             }
             
             if (args[0].equalsIgnoreCase("set")) {
-                return Arrays.asList("menutype", "requirement")
+                return Arrays.asList("menutype", "requirement", "maxplayers")
                     .stream()
                     .filter(s -> s.toLowerCase().startsWith(args[1].toLowerCase()))
                     .collect(Collectors.toList());
@@ -1276,6 +1294,15 @@ public class SeminarioCommand implements CommandExecutor, TabCompleter {
         }
         
         if (args.length == 3) {
+            if (args[0].equalsIgnoreCase("hologram") && (args[1].equalsIgnoreCase("move") || args[1].equalsIgnoreCase("delete"))) {
+                if (countHologramManager != null) {
+                    return configManager.getAllCountHolograms().keySet().stream()
+                        .filter(s -> s.toLowerCase().startsWith(args[2].toLowerCase()))
+                        .collect(Collectors.toList());
+                }
+                return java.util.Collections.emptyList();
+            }
+
             if (args[0].equalsIgnoreCase("create") && args[1].equalsIgnoreCase("fixslide")) {
                 // Suggest FIXSLIDE zone name (user types this)
                 return Arrays.asList("<nombre_fixslide>");
@@ -1310,7 +1337,7 @@ public class SeminarioCommand implements CommandExecutor, TabCompleter {
                     .collect(Collectors.toList());
             }
 
-            if (args[0].equalsIgnoreCase("sqlbattle") && (args[1].equalsIgnoreCase("start") || args[1].equalsIgnoreCase("stop") || args[1].equalsIgnoreCase("reset") || args[1].equalsIgnoreCase("debug") || args[1].equalsIgnoreCase("info") || args[1].equalsIgnoreCase("remove"))) {
+            if (args[0].equalsIgnoreCase("sqlbattle") && (args[1].equalsIgnoreCase("start") || args[1].equalsIgnoreCase("stop") || args[1].equalsIgnoreCase("reset") || args[1].equalsIgnoreCase("debug") || args[1].equalsIgnoreCase("info") || args[1].equalsIgnoreCase("remove") || args[1].equalsIgnoreCase("clone"))) {
                 return sqlBattleManager.getAllSQLBattles().keySet().stream()
                     .filter(s -> s.toLowerCase().startsWith(args[2].toLowerCase()))
                     .collect(Collectors.toList());
@@ -1375,6 +1402,13 @@ public class SeminarioCommand implements CommandExecutor, TabCompleter {
                     .collect(Collectors.toList());
             }
 
+            if (args[0].equalsIgnoreCase("create") && args[1].equalsIgnoreCase("counthologram")) {
+                return org.bukkit.Bukkit.getWorlds().stream()
+                    .map(org.bukkit.World::getName)
+                    .filter(s -> s.toLowerCase().startsWith(args[3].toLowerCase()))
+                    .collect(Collectors.toList());
+            }
+
             if (args[0].equalsIgnoreCase("sqlbattle") && args[1].equalsIgnoreCase("here") && args[2].equalsIgnoreCase("set")) {
                 return Arrays.asList("entry", "wavestart", "start", "checkpoint", "prewave", "summonzone", "enemyspawn", "castle")
                     .stream()
@@ -1395,6 +1429,15 @@ public class SeminarioCommand implements CommandExecutor, TabCompleter {
                     .collect(Collectors.toList());
             }
 
+            // Tab-complete dest world for clone (loaded worlds not already registered)
+            if (args[0].equalsIgnoreCase("sqlbattle") && args[1].equalsIgnoreCase("clone")) {
+                return org.bukkit.Bukkit.getWorlds().stream()
+                    .map(org.bukkit.World::getName)
+                    .filter(s -> !sqlBattleManager.isSQLBattle(s))
+                    .filter(s -> s.toLowerCase().startsWith(args[3].toLowerCase()))
+                    .collect(Collectors.toList());
+            }
+
             if (args[0].equalsIgnoreCase("sqlbattle") && args[1].equalsIgnoreCase("get")) {
                 return Bukkit.getOnlinePlayers().stream()
                     .map(Player::getName)
@@ -1403,6 +1446,13 @@ public class SeminarioCommand implements CommandExecutor, TabCompleter {
             }
         }
         
+        if (args.length == 3 && args[0].equalsIgnoreCase("set") && args[1].equalsIgnoreCase("maxplayers")) {
+            return org.bukkit.Bukkit.getWorlds().stream()
+                .map(org.bukkit.World::getName)
+                .filter(s -> s.toLowerCase().startsWith(args[2].toLowerCase()))
+                .collect(Collectors.toList());
+        }
+
         if (args.length == 3 && args[0].equalsIgnoreCase("set") && args[1].equalsIgnoreCase("menutype")) {
             return configManager.getAllMenuZones().keySet()
                 .stream()
@@ -1448,7 +1498,7 @@ public class SeminarioCommand implements CommandExecutor, TabCompleter {
         // SQL command tab completion
         if (args[0].equalsIgnoreCase("sql")) {
             if (args.length == 2) {
-                return Arrays.asList("here", "schema", "bank", "info", "repair")
+                return Arrays.asList("here", "schema", "bank", "info", "repair", "clone")
                     .stream()
                     .filter(s -> s.toLowerCase().startsWith(args[1].toLowerCase()))
                     .collect(Collectors.toList());
@@ -1689,19 +1739,21 @@ public class SeminarioCommand implements CommandExecutor, TabCompleter {
      * Handle SQL commands
      */
     private boolean handleSQLCommand(CommandSender sender, String[] args) {
-        if (!(sender instanceof Player)) {
+        if (args.length < 2) {
+            sender.sendMessage(ChatColor.RED + "Uso: /sm sql <here|schema|bank|info|repair|clone>");
+            return true;
+        }
+
+        String sqlAction = args[1].toLowerCase();
+
+        // clone can be used from console; all other sub-commands require a player
+        if (!sqlAction.equals("clone") && !(sender instanceof Player)) {
             sender.sendMessage(ChatColor.RED + "Este comando solo puede ser usado por jugadores.");
             return true;
         }
-        
-        if (args.length < 2) {
-            sender.sendMessage(ChatColor.RED + "Uso: /sm sql <here|schema|bank|info|repair>");
-            return true;
-        }
-        
-        Player player = (Player) sender;
-        String sqlAction = args[1].toLowerCase();
-        
+
+        Player player = (sender instanceof Player) ? (Player) sender : null;
+
         switch (sqlAction) {
             case "here":
                 return handleSQLHereCommand(player, args);
@@ -1713,8 +1765,10 @@ public class SeminarioCommand implements CommandExecutor, TabCompleter {
                 return handleSQLInfoCommand(sender, args);
             case "repair":
                 return handleSQLRepairCommand(player, args);
+            case "clone":
+                return handleSQLCloneCommand(sender, args);
             default:
-                sender.sendMessage(ChatColor.RED + "Uso: /sm sql <here|schema|bank|info|repair>");
+                sender.sendMessage(ChatColor.RED + "Uso: /sm sql <here|schema|bank|info|repair|clone>");
                 return true;
         }
     }
@@ -1766,10 +1820,50 @@ public class SeminarioCommand implements CommandExecutor, TabCompleter {
                 return handleSQLBattleRankingCommand(sender, args);
             case "remove":
                 return handleSQLBattleRemoveCommand(sender, args);
+            case "clone":
+                return handleSQLBattleCloneCommand(sender, args);
             default:
-                sender.sendMessage(ChatColor.RED + "Uso: /sm sqlbattle <here|start|stop|difficulty|reset|forcestage|respawncheckpoint|stopgamemode|continuegamemode|get|suggest|debug|list|info|ranking|remove>");
+                sender.sendMessage(ChatColor.RED + "Uso: /sm sqlbattle <here|start|stop|difficulty|reset|forcestage|respawncheckpoint|stopgamemode|continuegamemode|get|suggest|debug|list|info|ranking|remove|clone>");
                 return true;
         }
+    }
+
+    private boolean handleSQLBattleCloneCommand(CommandSender sender, String[] args) {
+        if (args.length < 4) {
+            sender.sendMessage(ChatColor.RED + "Uso: /sm sqlbattle clone <mundo-origen> <mundo-destino>");
+            sender.sendMessage(ChatColor.GRAY + "Copia toda la configuración de zonas del mundo origen al destino.");
+            return true;
+        }
+
+        String source = args[2];
+        String dest = args[3];
+
+        if (!sqlBattleManager.isSQLBattle(source)) {
+            sender.sendMessage(ChatColor.RED + "El mundo '" + source + "' no está registrado como SQL Battle.");
+            return true;
+        }
+
+        if (sqlBattleManager.isSQLBattle(dest)) {
+            sender.sendMessage(ChatColor.RED + "El mundo '" + dest + "' ya está registrado como SQL Battle.");
+            return true;
+        }
+
+        if (org.bukkit.Bukkit.getWorld(dest) == null) {
+            sender.sendMessage(ChatColor.RED + "El mundo '" + dest + "' no está cargado en el servidor.");
+            sender.sendMessage(ChatColor.GRAY + "Usa Multiverse para cargarlo antes de clonarlo.");
+            return true;
+        }
+
+        if (sqlBattleManager.cloneSQLBattle(source, dest)) {
+            sender.sendMessage(ChatColor.GREEN + "¡SQL Battle clonado exitosamente!");
+            sender.sendMessage(ChatColor.GRAY + "Origen: " + source);
+            sender.sendMessage(ChatColor.GRAY + "Destino: " + dest);
+            sender.sendMessage(ChatColor.YELLOW + "Toda la configuración de zonas fue copiada.");
+            sender.sendMessage(ChatColor.GRAY + "Usa /sm sqlbattle info " + dest + " para verificar.");
+        } else {
+            sender.sendMessage(ChatColor.RED + "Error al clonar el SQL Battle. Verifica los logs.");
+        }
+        return true;
     }
 
     private boolean handleSQLBattleStopGamemodeCommand(CommandSender sender) {
@@ -2091,6 +2185,204 @@ public class SeminarioCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage(ChatColor.GREEN + "Jugador enviado al checkpoint: " + target.getName());
         if (!target.equals(sender)) {
             target.sendMessage(ChatColor.YELLOW + "Admin: fuiste enviado al checkpoint de SQL Battle.");
+        }
+        return true;
+    }
+
+    private boolean handleCreateCountHologram(CommandSender sender, String[] args) {
+        // /sm create counthologram <nombre> <mundo>
+        if (!(sender instanceof Player)) {
+            sender.sendMessage(ChatColor.RED + "Este comando solo puede ser usado por jugadores.");
+            return true;
+        }
+        if (args.length < 4) {
+            sender.sendMessage(ChatColor.RED + "Uso: /sm create counthologram <nombre> <mundo>");
+            sender.sendMessage(ChatColor.GRAY + "El holograma se crea en tu posición actual y muestra el conteo de jugadores del mundo indicado.");
+            return true;
+        }
+
+        Player player = (Player) sender;
+        String holoName = args[2];
+        String worldName = args[3];
+
+        if (Bukkit.getWorld(worldName) == null) {
+            sender.sendMessage(ChatColor.RED + "El mundo '" + worldName + "' no está cargado.");
+            return true;
+        }
+
+        if (countHologramManager == null) {
+            sender.sendMessage(ChatColor.RED + "El sistema de holograms no está disponible.");
+            return true;
+        }
+
+        if (countHologramManager.hologramExists(holoName)) {
+            sender.sendMessage(ChatColor.RED + "Ya existe un holograma con el nombre '" + holoName + "'.");
+            return true;
+        }
+
+        if (countHologramManager.createHologram(holoName, worldName, player.getLocation().clone().add(0, 1.5, 0))) {
+            int limit = configManager.getWorldPlayerLimit(worldName);
+            String limitStr = limit > 0 ? String.valueOf(limit) : "∞";
+            sender.sendMessage(ChatColor.GREEN + "¡Holograma '" + holoName + "' creado!");
+            sender.sendMessage(ChatColor.GRAY + "Mundo: " + worldName + "  |  Límite: " + limitStr);
+            sender.sendMessage(ChatColor.GRAY + "Usa /sm set maxplayers " + worldName + " <número> para configurar el límite.");
+        } else {
+            sender.sendMessage(ChatColor.RED + "Error al crear el holograma.");
+        }
+        return true;
+    }
+
+    private boolean handleHologramCommand(CommandSender sender, String[] args) {
+        // /sm hologram <list|move|delete> [nombre]
+        if (args.length < 2) {
+            sender.sendMessage(ChatColor.RED + "Uso: /sm hologram <list|move|delete> [nombre]");
+            return true;
+        }
+        if (countHologramManager == null) {
+            sender.sendMessage(ChatColor.RED + "El sistema de holograms no está disponible.");
+            return true;
+        }
+
+        String sub = args[1].toLowerCase();
+        switch (sub) {
+            case "list": {
+                java.util.Map<String, com.seminario.plugin.config.ConfigManager.CountHologramData> all =
+                        configManager.getAllCountHolograms();
+                if (all.isEmpty()) {
+                    sender.sendMessage(ChatColor.YELLOW + "No hay holograms registrados.");
+                    return true;
+                }
+                sender.sendMessage(ChatColor.GOLD + "── Holograms (" + all.size() + ") ──");
+                for (java.util.Map.Entry<String, com.seminario.plugin.config.ConfigManager.CountHologramData> e : all.entrySet()) {
+                    com.seminario.plugin.config.ConfigManager.CountHologramData d = e.getValue();
+                    int limit = configManager.getWorldPlayerLimit(d.worldName);
+                    String limitStr = limit > 0 ? String.valueOf(limit) : "∞";
+                    sender.sendMessage(ChatColor.YELLOW + e.getKey()
+                            + ChatColor.GRAY + " → muestra: " + ChatColor.WHITE + d.worldName
+                            + ChatColor.GRAY + "  spawneado en: " + ChatColor.WHITE + d.spawnWorld
+                            + ChatColor.GRAY + "  límite: " + ChatColor.WHITE + limitStr
+                            + ChatColor.GRAY + "  pos: "
+                            + String.format("%.1f %.1f %.1f", d.x, d.y, d.z));
+                }
+                return true;
+            }
+            case "move": {
+                if (!(sender instanceof Player)) {
+                    sender.sendMessage(ChatColor.RED + "Este comando solo puede ser usado por jugadores.");
+                    return true;
+                }
+                if (args.length < 3) {
+                    sender.sendMessage(ChatColor.RED + "Uso: /sm hologram move <nombre>");
+                    return true;
+                }
+                Player player = (Player) sender;
+                String name = args[2];
+                if (!countHologramManager.hologramExists(name)) {
+                    sender.sendMessage(ChatColor.RED + "No existe un holograma llamado '" + name + "'.");
+                    return true;
+                }
+                org.bukkit.Location newLoc = player.getLocation().clone().add(0, 1.5, 0);
+                countHologramManager.moveHologram(name, newLoc);
+                sender.sendMessage(ChatColor.GREEN + "Holograma '" + name + "' movido a tu posición actual.");
+                sender.sendMessage(ChatColor.GRAY + String.format("Pos: %.1f %.1f %.1f en %s",
+                        newLoc.getX(), newLoc.getY(), newLoc.getZ(), newLoc.getWorld().getName()));
+                return true;
+            }
+            case "delete": {
+                if (args.length < 3) {
+                    sender.sendMessage(ChatColor.RED + "Uso: /sm hologram delete <nombre>");
+                    return true;
+                }
+                String name = args[2];
+                if (countHologramManager.removeHologram(name)) {
+                    sender.sendMessage(ChatColor.GREEN + "Holograma '" + name + "' eliminado.");
+                } else {
+                    sender.sendMessage(ChatColor.RED + "No existe un holograma llamado '" + name + "'.");
+                }
+                return true;
+            }
+            default:
+                sender.sendMessage(ChatColor.RED + "Subcomando desconocido. Usa: list, move, delete");
+                return true;
+        }
+    }
+
+    private boolean handleSetMaxPlayers(CommandSender sender, String[] args) {
+        // /sm set maxplayers <mundo> [limite]
+        if (args.length < 3) {
+            sender.sendMessage(ChatColor.RED + "Uso: /sm set maxplayers <mundo> [límite]");
+            sender.sendMessage(ChatColor.GRAY + "Omite el límite o usa 0 para eliminar la restricción.");
+            return true;
+        }
+
+        String worldName = args[2];
+        int limit = 0;
+
+        if (args.length >= 4) {
+            try {
+                limit = Integer.parseInt(args[3]);
+            } catch (NumberFormatException e) {
+                sender.sendMessage(ChatColor.RED + "El límite debe ser un número entero.");
+                return true;
+            }
+            if (limit < 0) {
+                sender.sendMessage(ChatColor.RED + "El límite no puede ser negativo.");
+                return true;
+            }
+        }
+
+        configManager.setWorldPlayerLimit(worldName, limit);
+
+        if (limit > 0) {
+            sender.sendMessage(ChatColor.GREEN + "Límite de jugadores para '" + worldName + "' establecido en " + limit + ".");
+        } else {
+            sender.sendMessage(ChatColor.GREEN + "Límite de jugadores para '" + worldName + "' eliminado (sin restricción).");
+        }
+
+        // Refresh holograms that track this world
+        if (countHologramManager != null) {
+            countHologramManager.refreshWorld(worldName);
+        }
+        return true;
+    }
+
+    private boolean handleSQLCloneCommand(CommandSender sender, String[] args) {
+        if (args.length < 4) {
+            sender.sendMessage(ChatColor.RED + "Uso: /sm sql clone <mundo-origen> <mundo-destino>");
+            sender.sendMessage(ChatColor.GRAY + "Copia toda la configuración de niveles del mundo origen al destino.");
+            return true;
+        }
+
+        String source = args[2];
+        String dest = args[3];
+
+        if (!sqlDungeonManager.isSQLDungeon(source)) {
+            sender.sendMessage(ChatColor.RED + "El mundo '" + source + "' no está registrado como SQL Dungeon.");
+            return true;
+        }
+
+        if (sqlDungeonManager.isSQLDungeon(dest)) {
+            sender.sendMessage(ChatColor.RED + "El mundo '" + dest + "' ya está registrado como SQL Dungeon.");
+            return true;
+        }
+
+        if (org.bukkit.Bukkit.getWorld(dest) == null) {
+            sender.sendMessage(ChatColor.RED + "El mundo '" + dest + "' no está cargado en el servidor.");
+            sender.sendMessage(ChatColor.GRAY + "Usa Multiverse para cargarlo antes de clonarlo.");
+            return true;
+        }
+
+        com.seminario.plugin.model.SQLDungeonWorld srcWorld = sqlDungeonManager.getSQLDungeon(source);
+        int levelCount = srcWorld != null ? srcWorld.getLevels().size() : 0;
+
+        if (sqlDungeonManager.cloneSQLDungeon(source, dest)) {
+            sender.sendMessage(ChatColor.GREEN + "¡SQL Dungeon clonado exitosamente!");
+            sender.sendMessage(ChatColor.GRAY + "Origen: " + source);
+            sender.sendMessage(ChatColor.GRAY + "Destino: " + dest);
+            sender.sendMessage(ChatColor.GRAY + "Niveles copiados: " + levelCount);
+            sender.sendMessage(ChatColor.GRAY + "Usa /sm sql info " + dest + " para verificar.");
+        } else {
+            sender.sendMessage(ChatColor.RED + "Error al clonar el SQL Dungeon. Verifica los logs.");
         }
         return true;
     }

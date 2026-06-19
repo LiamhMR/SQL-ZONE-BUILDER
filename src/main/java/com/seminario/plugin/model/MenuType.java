@@ -29,7 +29,13 @@ public enum MenuType {
     /**
      * Laboratory menu type - enables SQL experimentation and learning
      */
-    LABORATORY("laboratory");
+    LABORATORY("laboratory"),
+
+    /**
+     * Laboratory2 menu type - enables SELECT-only SQL experimentation using the SQLBattle schema
+     * (jugador, tipos_item, almacen, inventario, tipos_enemigo, enemigos)
+     */
+    LABORATORY2("laboratory2");
     
     private final String name;
     

@@ -38,6 +38,7 @@ public class PlayerEventListener implements Listener {
     private final FixSlideManager fixSlideManager;
     private final org.bukkit.plugin.java.JavaPlugin plugin;
     private LaboratoryListener laboratoryListener;
+    private com.seminario.plugin.manager.CountHologramManager countHologramManager;
     
     // Track which zones players are currently in
     private final Map<UUID, String> playerCurrentZones;
@@ -56,6 +57,10 @@ public class PlayerEventListener implements Listener {
      */
     public void setLaboratoryListener(LaboratoryListener laboratoryListener) {
         this.laboratoryListener = laboratoryListener;
+    }
+
+    public void setCountHologramManager(com.seminario.plugin.manager.CountHologramManager manager) {
+        this.countHologramManager = manager;
     }
     
     /**
@@ -77,6 +82,16 @@ public class PlayerEventListener implements Listener {
         
         String currentZone = playerCurrentZones.get(player.getUniqueId());
         String newZone = findZoneAtLocation(toLocation);
+        
+        // Hysteresis: if the player is already in a zone and still physically inside it,
+        // keep them in that zone even if another zone also matches their location.
+        // This prevents oscillation when two zones overlap (e.g. two adjacent labs).
+        if (currentZone != null && newZone != null && !newZone.equals(currentZone)) {
+            MenuZone currentMenuZone = configManager.getMenuZone(currentZone);
+            if (currentMenuZone != null && ZoneDetector.isLocationInZone(toLocation, currentMenuZone)) {
+                newZone = currentZone; // stay in current zone
+            }
+        }
         
         // Check if zone changed
         if (!java.util.Objects.equals(currentZone, newZone)) {
@@ -212,6 +227,15 @@ public class PlayerEventListener implements Listener {
             40L // 2 second delay to ensure chunks are loaded
         );
         
+        // Refresh count holograms for the world this player joined
+        if (countHologramManager != null) {
+            org.bukkit.Bukkit.getScheduler().runTaskLater(
+                plugin,
+                () -> countHologramManager.refreshWorld(player.getWorld().getName()),
+                40L
+            );
+        }
+
         // Check if player is in any zone on join
         String zone = findZoneAtLocation(player.getLocation());
         if (zone != null) {
@@ -242,8 +266,33 @@ public class PlayerEventListener implements Listener {
         if (currentZone != null) {
             player.sendMessage(Component.text("Desconectado de la zona: " + currentZone, NamedTextColor.GRAY));
         }
+
+        // Refresh count holograms for the world the player left
+        if (countHologramManager != null) {
+            final String worldName = player.getWorld().getName();
+            org.bukkit.Bukkit.getScheduler().runTaskLater(
+                plugin,
+                () -> countHologramManager.refreshWorld(worldName),
+                2L
+            );
+        }
     }
-    
+
+    @org.bukkit.event.EventHandler
+    public void onPlayerChangedWorld(org.bukkit.event.player.PlayerChangedWorldEvent event) {
+        if (countHologramManager == null) return;
+        String from = event.getFrom().getName();
+        String to = event.getPlayer().getWorld().getName();
+        org.bukkit.Bukkit.getScheduler().runTaskLater(
+            plugin,
+            () -> {
+                countHologramManager.refreshWorld(from);
+                countHologramManager.refreshWorld(to);
+            },
+            2L
+        );
+    }
+
     /**
      * Find which zone (if any) contains the given location
      * @param location The location to check
@@ -297,11 +346,16 @@ public class PlayerEventListener implements Listener {
                 if (laboratoryListener != null) {
                     laboratoryListener.addPlayerToLaboratory(player);
                 }
+            } else if (zone.getMenuType() == MenuType.LABORATORY2) {
+                player.sendMessage(Component.text("⚔ Laboratorio SQL Battle", NamedTextColor.GOLD));
+                if (laboratoryListener != null) {
+                    laboratoryListener.addPlayerToLab2(player);
+                }
             }
         } else {
             player.sendMessage(Component.text("Zona sin configurar", NamedTextColor.GRAY));
             if (player.hasPermission("seminario.admin")) {
-                player.sendMessage(Component.text("Usa /sm zone " + zoneName + " type <SLIDE|CHEST|CHESTPORT|LABORATORY> para configurar", NamedTextColor.GRAY));
+                player.sendMessage(Component.text("Usa /sm zone " + zoneName + " type <SLIDE|CHEST|CHESTPORT|LABORATORY|LABORATORY2> para configurar", NamedTextColor.GRAY));
             }
         }
     }
@@ -321,9 +375,20 @@ public class PlayerEventListener implements Listener {
         // Clean up chestport GUI session if applicable
         ChestportGUI.cleanupSession(player);
         
-        // Remove from laboratory if applicable
+        // Remove from laboratory only if the zone they are leaving is a lab zone
         if (laboratoryListener != null) {
-            laboratoryListener.removePlayerFromLaboratory(player);
+            MenuZone leftZone = configManager.getAllMenuZones().get(zoneName);
+            if (leftZone != null) {
+                if (leftZone.getMenuType() == MenuType.LABORATORY) {
+                    laboratoryListener.removePlayerFromLaboratory(player);
+                } else if (leftZone.getMenuType() == MenuType.LABORATORY2) {
+                    laboratoryListener.removePlayerFromLab2(player);
+                }
+            } else {
+                // Zone no longer exists — clean up both to be safe
+                laboratoryListener.removePlayerFromLaboratory(player);
+                laboratoryListener.removePlayerFromLab2(player);
+            }
         }
     }
     

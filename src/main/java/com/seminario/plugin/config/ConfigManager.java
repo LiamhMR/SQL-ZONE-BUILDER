@@ -895,4 +895,122 @@ public class ConfigManager {
     public boolean hasServerSpawnpoint() {
         return config.contains("server.spawnpoint.world");
     }
+
+    // ===== WORLD PLAYER LIMITS =====
+
+    /**
+     * Set the maximum number of players allowed in a world.
+     * A value <= 0 removes the limit.
+     */
+    public void setWorldPlayerLimit(String worldName, int limit) {
+        if (limit <= 0) {
+            config.set("worldlimits." + worldName, null);
+            logger.info("Removed player limit for world '" + worldName + "'.");
+        } else {
+            config.set("worldlimits." + worldName, limit);
+            logger.info("Set player limit for world '" + worldName + "' to " + limit + ".");
+        }
+        try {
+            config.save(configFile);
+        } catch (IOException e) {
+            logger.severe("Could not save world player limit: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Get the maximum number of players allowed in a world.
+     * @return the limit, or -1 if no limit is configured
+     */
+    public int getWorldPlayerLimit(String worldName) {
+        if (!config.contains("worldlimits." + worldName)) return -1;
+        return config.getInt("worldlimits." + worldName, -1);
+    }
+
+    /**
+     * Check whether a world has a player limit configured.
+     */
+    public boolean hasWorldPlayerLimit(String worldName) {
+        return getWorldPlayerLimit(worldName) > 0;
+    }
+
+    // ===== COUNT HOLOGRAMS =====
+
+    /**
+     * Immutable data bag for a count hologram entry.
+     */
+    public static class CountHologramData {
+        /** World whose player count is displayed on the hologram. */
+        public final String worldName;
+        /** World where the ArmorStand entity is physically spawned. */
+        public final String spawnWorld;
+        public final double x;
+        public final double y;
+        public final double z;
+
+        public CountHologramData(String worldName, String spawnWorld, double x, double y, double z) {
+            this.worldName = worldName;
+            this.spawnWorld = spawnWorld;
+            this.x = x;
+            this.y = y;
+            this.z = z;
+        }
+    }
+
+    /**
+     * Return all count holograms stored in config.
+     */
+    public Map<String, CountHologramData> getAllCountHolograms() {
+        Map<String, CountHologramData> result = new HashMap<>();
+        ConfigurationSection section = config.getConfigurationSection("countholograms");
+        if (section == null) return result;
+
+        for (String name : section.getKeys(false)) {
+            String world = section.getString(name + ".world");
+            // spawn_world added in v2; fall back to world for old entries
+            String spawnWorld = section.getString(name + ".spawn_world", world);
+            double x = section.getDouble(name + ".x");
+            double y = section.getDouble(name + ".y");
+            double z = section.getDouble(name + ".z");
+            if (world != null) {
+                result.put(name, new CountHologramData(world, spawnWorld, x, y, z));
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Persist a new count hologram entry.
+     * @param trackWorldName  world whose player count will be shown
+     * @param location        where the ArmorStand will be placed (world + coords)
+     */
+    public void addCountHologram(String name, String trackWorldName, Location location) {
+        String path = "countholograms." + name;
+        config.set(path + ".world", trackWorldName);
+        config.set(path + ".spawn_world", location.getWorld().getName());
+        config.set(path + ".x", location.getX());
+        config.set(path + ".y", location.getY());
+        config.set(path + ".z", location.getZ());
+        try {
+            config.save(configFile);
+            logger.info("Saved count hologram '" + name + "' tracking world '" + trackWorldName + "' at " + location.getWorld().getName() + ".");
+        } catch (IOException e) {
+            logger.severe("Could not save count hologram '" + name + "': " + e.getMessage());
+        }
+    }
+
+    /**
+     * Remove a count hologram entry from config.
+     * @return true if it existed
+     */
+    public boolean removeCountHologram(String name) {
+        if (!config.contains("countholograms." + name)) return false;
+        config.set("countholograms." + name, null);
+        try {
+            config.save(configFile);
+            logger.info("Removed count hologram '" + name + "'.");
+        } catch (IOException e) {
+            logger.severe("Could not save after removing count hologram: " + e.getMessage());
+        }
+        return true;
+    }
 }

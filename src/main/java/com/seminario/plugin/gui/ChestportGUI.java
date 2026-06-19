@@ -23,6 +23,7 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
 
+import com.seminario.plugin.config.ConfigManager;
 import com.seminario.plugin.manager.QuestManager;
 import com.seminario.plugin.model.MenuZone;
 
@@ -37,12 +38,17 @@ public class ChestportGUI {
     private static final Map<UUID, MenuZone> playerZones = new HashMap<>();
     private static final Random random = new Random();
     private static QuestManager questManager = null;
-    
-    /**
-     * Set the quest manager for requirement validation
-     */
+    private static ConfigManager configManager = null;
+
     public static void setQuestManager(QuestManager manager) {
         questManager = manager;
+    }
+
+    /**
+     * Set the config manager for world player-limit checks
+     */
+    public static void setConfigManager(ConfigManager manager) {
+        configManager = manager;
     }
     
     /**
@@ -132,6 +138,25 @@ public class ChestportGUI {
                 // Requirement not met
                 handleRequirementFailed(player, zone);
                 return;
+            }
+        }
+
+        // Check world player limit
+        if (configManager != null && zone.hasTeleportLocation()) {
+            String destWorldName = zone.getTeleportWorldName();
+            int limit = configManager.getWorldPlayerLimit(destWorldName);
+            if (limit > 0) {
+                World destWorld = Bukkit.getWorld(destWorldName);
+                int current = (destWorld != null) ? destWorld.getPlayers().size() : 0;
+                if (current >= limit) {
+                    player.sendMessage(Component.text("¡Arena llena! (" + current + "/" + limit + " jugadores)", NamedTextColor.RED));
+                    player.showTitle(net.kyori.adventure.title.Title.title(
+                        Component.text("Arena Llena", NamedTextColor.RED),
+                        Component.text(current + "/" + limit + " jugadores", NamedTextColor.GOLD)
+                    ));
+                    player.playSound(player.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 0.5f);
+                    return;
+                }
             }
         }
 

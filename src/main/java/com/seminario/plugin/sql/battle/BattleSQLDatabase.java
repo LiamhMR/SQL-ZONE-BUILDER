@@ -104,7 +104,7 @@ public class BattleSQLDatabase {
         BattleWaveDefinition def = BattleWaveBank.getByWaveNumber(waveNumber);
         try (Statement stmt = connection.createStatement()) {
             stmt.execute("DELETE FROM enemigos");
-            stmt.execute("DELETE FROM inventario");
+            // inventario is intentionally preserved so items carry over between waves
             stmt.execute("UPDATE jugador SET oleada_actual = " + waveNumber
                     + ", etapa_actual = 0, puntos_accion = 5 WHERE id = 1");
         }
@@ -120,7 +120,7 @@ public class BattleSQLDatabase {
     public void loadWaveDefinition(BattleWaveDefinition def) throws SQLException {
         try (Statement stmt = connection.createStatement()) {
             stmt.execute("DELETE FROM enemigos");
-            stmt.execute("DELETE FROM inventario");
+            // inventario is intentionally preserved so items carry over between waves
             stmt.execute("UPDATE jugador SET oleada_actual = " + def.getWaveId()
                     + ", etapa_actual = 0, puntos_accion = 5 WHERE id = 1");
         }
@@ -368,7 +368,8 @@ public class BattleSQLDatabase {
                 "CREATE LOCAL TEMPORARY TABLE IF NOT EXISTS inventario (" +
                 "  item_id         INT PRIMARY KEY," +
                 "  cantidad        INT NOT NULL CHECK (cantidad >= 0)," +
-                "  activo_en_etapa INT DEFAULT 1 CHECK (activo_en_etapa BETWEEN 1 AND 3)" +
+                "  activo_en_etapa INT DEFAULT 1 CHECK (activo_en_etapa BETWEEN 1 AND 3)," +
+                "  position        INT DEFAULT -1" +
                 ")"
             );
         }
@@ -405,6 +406,7 @@ public class BattleSQLDatabase {
             stmt.execute("MERGE INTO tipos_item (id, nombre, categoria, costo_mana, oleada_desbloqueo) KEY(id) VALUES (21, 'TNT Temporizada',         'consumible',  0, 6)");
             stmt.execute("MERGE INTO tipos_item (id, nombre, categoria, costo_mana, oleada_desbloqueo) KEY(id) VALUES (22, 'Ballesta de Asedio',      'arma',        0, 4)");
             stmt.execute("MERGE INTO tipos_item (id, nombre, categoria, costo_mana, oleada_desbloqueo) KEY(id) VALUES (23, 'Manzana Dorada',          'consumible',  0, 5)");
+            stmt.execute("MERGE INTO tipos_item (id, nombre, categoria, costo_mana, oleada_desbloqueo) KEY(id) VALUES (24, 'Antorcha',                'consumible',  0, 1)");
 
             // 8 enemy types with distinct weaknesses
             stmt.execute("MERGE INTO tipos_enemigo (id, nombre, debilidad, descripcion) KEY(id) VALUES (1, 'Zombi',          'luz',       'Muerto viviente lento pero resistente')");
@@ -671,18 +673,91 @@ public class BattleSQLDatabase {
         private final int cantidad;
         private final String nombre;
         private final String categoria;
+        private final int position;
 
         public InventoryItemRow(int itemId, int cantidad, String nombre, String categoria) {
+            this(itemId, cantidad, nombre, categoria, -1);
+        }
+
+        public InventoryItemRow(int itemId, int cantidad, String nombre, String categoria, int position) {
             this.itemId = itemId;
             this.cantidad = cantidad;
             this.nombre = nombre;
             this.categoria = categoria;
+            this.position = position;
         }
 
         public int getItemId() { return itemId; }
         public int getCantidad() { return cantidad; }
         public String getNombre() { return nombre; }
         public String getCategoria() { return categoria; }
+        /** Bukkit slot index where this item was last placed, or -1 if not yet placed. */
+        public int getPosition() { return position; }
+    }
+
+    /**
+     * Inserts a gift item into inventario if it is not already present.
+     * Returns true if the row was inserted, false if it already existed.
+     */
+    public boolean insertGiftItemIfAbsent(int itemId, int cantidad, int stage) throws SQLException {
+        String check = "SELECT COUNT(*) FROM inventario WHERE item_id = ?";
+        try (PreparedStatement ps = connection.prepareStatement(check)) {
+            ps.setInt(1, itemId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next() && rs.getInt(1) > 0) return false;
+            }
+        }
+        String insert = "INSERT INTO inventario (item_id, cantidad, activo_en_etapa, position) VALUES (?, ?, ?, -1)";
+        try (PreparedStatement ps = connection.prepareStatement(insert)) {
+            ps.setInt(1, itemId);
+            ps.setInt(2, cantidad);
+            ps.setInt(3, stage);
+            ps.executeUpdate();
+        }
+        return true;
+    }
+
+    /**
+     * Returns a snapshot of item_id → position for all rows currently in inventario.
+     * Used to detect which items were removed after a DELETE so the physical inventory can be synced.
+     */
+    public Map<Integer, Integer> snapshotInventarioPositions() throws SQLException {
+        Map<Integer, Integer> snap = new HashMap<>();
+        String sql = "SELECT item_id, position FROM inventario";
+        try (Statement stmt = connection.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            while (rs.next()) {
+                snap.put(rs.getInt("item_id"), rs.getInt("position"));
+            }
+        }
+        return snap;
+    }
+
+    /**
+     * Returns the number of non-armor items currently in inventario
+     * (category != 'armadura'). Used to enforce the 7-slot hotbar limit.
+     */
+    public int getHotbarItemCount() throws SQLException {
+        String sql = "SELECT COUNT(*) FROM inventario i JOIN tipos_item t ON i.item_id = t.id "
+            + "WHERE t.categoria != 'armadura'";
+        try (Statement stmt = connection.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            if (rs.next()) return rs.getInt(1);
+        }
+        return 0;
+    }
+
+    /**
+     * Updates the position (Bukkit slot index) of an item in inventario.
+     * Use -1 to mark as unassigned.
+     */
+    public void updateInventarioPosition(int itemId, int position) throws SQLException {
+        String sql = "UPDATE inventario SET position = ? WHERE item_id = ?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, position);
+            ps.setInt(2, itemId);
+            ps.executeUpdate();
+        }
     }
 
     /**
@@ -691,7 +766,7 @@ public class BattleSQLDatabase {
      */
     public List<InventoryItemRow> getInventoryItemsForExactStage(int stage) throws SQLException {
         List<InventoryItemRow> items = new ArrayList<>();
-        String sql = "SELECT i.item_id, i.cantidad, t.nombre, t.categoria "
+        String sql = "SELECT i.item_id, i.cantidad, t.nombre, t.categoria, i.position "
             + "FROM inventario i INNER JOIN tipos_item t ON i.item_id = t.id "
             + "WHERE i.activo_en_etapa = ? AND t.categoria != 'invocacion'";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
@@ -702,7 +777,8 @@ public class BattleSQLDatabase {
                         rs.getInt("item_id"),
                         rs.getInt("cantidad"),
                         rs.getString("nombre"),
-                        rs.getString("categoria")
+                        rs.getString("categoria"),
+                        rs.getInt("position")
                     ));
                 }
             }

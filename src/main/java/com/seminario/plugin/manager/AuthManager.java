@@ -234,6 +234,7 @@ public class AuthManager {
     private void saveInvitations() {
         try {
             invitationsConfig.save(invitationsFile);
+            plugin.getLogger().info("invitations.yml saved successfully.");
         } catch (IOException e) {
             plugin.getLogger().severe("Could not save invitations.yml: " + e.getMessage());
         }
@@ -254,11 +255,18 @@ public class AuthManager {
     }
 
     private void consumeInvitation(String key) {
+        // Reload from disk first to guarantee we operate on the latest persisted state.
+        loadInvitations();
+
         int uses = invitationsConfig.getInt(INVITATIONS_SECTION + "." + key + ".uses", 0);
+        plugin.getLogger().info("Consuming invitation '" + key + "': current uses=" + uses);
+
         if (uses <= 1) {
             invitationsConfig.set(INVITATIONS_SECTION + "." + key, null);
+            plugin.getLogger().info("Invitation '" + key + "' fully consumed and removed.");
         } else {
             invitationsConfig.set(INVITATIONS_SECTION + "." + key + ".uses", uses - 1);
+            plugin.getLogger().info("Invitation '" + key + "' decremented to " + (uses - 1) + " uses.");
         }
         saveInvitations();
         ensureDefaultInvitationExists();

@@ -155,6 +155,51 @@ public class SQLBattleManager {
         return true;
     }
 
+    /**
+     * Clona la configuración de zonas de un SQLBattle existente a un nuevo mundo.
+     * El mundo destino debe estar cargado. Las coordenadas se copian tal cual,
+     * sólo se reemplaza la referencia de mundo en cada Location.
+     *
+     * @param sourceWorldName Nombre del mundo origen (ya configurado como SQLBattle)
+     * @param destWorldName   Nombre del mundo destino (debe estar cargado, no ser SQLBattle)
+     * @return true si el clon se completó exitosamente
+     */
+    public boolean cloneSQLBattle(String sourceWorldName, String destWorldName) {
+        SQLBattleWorld source = configManager.getSQLBattle(sourceWorldName);
+        if (source == null) return false;
+
+        org.bukkit.World destWorld = org.bukkit.Bukkit.getWorld(destWorldName);
+        if (destWorld == null) return false;
+
+        if (configManager.isSQLBattle(destWorldName)) return false;
+
+        SQLBattleWorld dest = new SQLBattleWorld(destWorldName);
+
+        dest.setWorldEntryLocation(cloneLocation(source.getWorldEntryLocation(), destWorld));
+        dest.setStartLocation(cloneLocation(source.getStartLocation(), destWorld));
+        dest.setWaveStartLocation(cloneLocation(source.getWaveStartLocation(), destWorld));
+        dest.setCheckpointLocation(cloneLocation(source.getCheckpointLocation(), destWorld));
+        dest.setPreparationLocation(cloneLocation(source.getPreparationLocation(), destWorld));
+        dest.setSummonZonePos1(cloneLocation(source.getSummonZonePos1(), destWorld));
+        dest.setSummonZonePos2(cloneLocation(source.getSummonZonePos2(), destWorld));
+        dest.setEnemySpawnPos1(cloneLocation(source.getEnemySpawnPos1(), destWorld));
+        dest.setEnemySpawnPos2(cloneLocation(source.getEnemySpawnPos2(), destWorld));
+        dest.setEntryZonePos1(cloneLocation(source.getEntryZonePos1(), destWorld));
+        dest.setEntryZonePos2(cloneLocation(source.getEntryZonePos2(), destWorld));
+        dest.setCastleZonePos1(cloneLocation(source.getCastleZonePos1(), destWorld));
+        dest.setCastleZonePos2(cloneLocation(source.getCastleZonePos2(), destWorld));
+
+        configManager.addSQLBattle(dest);
+        setWaveActive(destWorldName, false);
+        logger.info("Cloned SQL Battle config from '" + sourceWorldName + "' to '" + destWorldName + "'");
+        return true;
+    }
+
+    private org.bukkit.Location cloneLocation(org.bukkit.Location src, org.bukkit.World destWorld) {
+        if (src == null) return null;
+        return new org.bukkit.Location(destWorld, src.getX(), src.getY(), src.getZ(), src.getYaw(), src.getPitch());
+    }
+
     public boolean removeSQLBattle(String worldName) {
         stopSessionsForWorld(worldName);
         worldWaveActive.remove(worldName);
@@ -1403,12 +1448,16 @@ public class SQLBattleManager {
             Connection connection = session.database.getConnection();
             boolean originalAutoCommit = connection.getAutoCommit();
             Map<Integer, Integer> inventarioBeforeInsert = null;
+            Map<Integer, Integer> inventarioBeforeDelete = null;
 
             BattleExecutionResult result;
             try {
                 connection.setAutoCommit(false);
                 if ("INSERT".equalsIgnoreCase(validation.getQueryType())) {
                     inventarioBeforeInsert = session.database.snapshotInventarioQuantities();
+                }
+                if ("DELETE".equalsIgnoreCase(validation.getQueryType())) {
+                    inventarioBeforeDelete = session.database.snapshotInventarioPositions();
                 }
 
                 result = session.executor.execute(connection, query);
@@ -1422,10 +1471,41 @@ public class SQLBattleManager {
                 }
 
                 if ("INSERT".equalsIgnoreCase(result.getQueryType()) && inventarioBeforeInsert != null) {
+                    // Verify hotbar slot capacity before committing
+                    boolean inventarioTargeted = result.getTablesAccessed().stream()
+                        .anyMatch(t -> "inventario".equalsIgnoreCase(t));
+                    if (inventarioTargeted) {
+                        int hotbarUsed = session.database.getHotbarItemCount();
+                        if (hotbarUsed > 7) {
+                            connection.rollback();
+                            player.sendMessage(ChatColor.RED + "Hotbar lleno: no puedes preparar más de 7 ítems normales (7/7 slots).");
+                            player.sendMessage(ChatColor.GRAY + "Usa DELETE FROM inventario WHERE item_id = <id> para liberar espacio.");
+                            player.sendMessage(ChatColor.GRAY + "No se descontaron puntos de acción.");
+                            updatePreparationSidebar(player);
+                            return;
+                        }
+                    }
                     session.database.consumeAlmacenForInventarioIncrease(inventarioBeforeInsert);
                 }
 
+                if ("DELETE".equalsIgnoreCase(result.getQueryType()) && inventarioBeforeDelete != null) {
+                    boolean inventarioTargeted = result.getTablesAccessed().stream()
+                        .anyMatch(t -> "inventario".equalsIgnoreCase(t));
+                    if (inventarioTargeted) {
+                        // sync happens after commit below
+                    }
+                }
+
                 connection.commit();
+
+                // After DELETE on inventario: remove physical items whose rows are gone
+                if ("DELETE".equalsIgnoreCase(result.getQueryType()) && inventarioBeforeDelete != null) {
+                    boolean inventarioTargeted = result.getTablesAccessed().stream()
+                        .anyMatch(t -> "inventario".equalsIgnoreCase(t));
+                    if (inventarioTargeted) {
+                        syncPhysicalInventoryAfterDelete(player, inventarioBeforeDelete);
+                    }
+                }
             } catch (Exception txError) {
                 try {
                     connection.rollback();
@@ -1512,7 +1592,7 @@ public class SQLBattleManager {
 
     private void showPreparationSuggestions(Player player) {
         player.sendMessage(ChatColor.GOLD + "=== Sugerencias SQL (Prewave) ===");
-        player.sendMessage(ChatColor.GRAY + "Haz click en una sugerencia para copiarla al chat y editarla antes de enviarla." );
+        player.sendMessage(ChatColor.GRAY + "Haz click en una sugerencia para editarla en el chat antes de enviar." );
         for (int id = 1; id <= 4; id++) {
             String title = getSuggestionTitleById(id);
             String query = getSuggestedQueryById(id);
@@ -1522,7 +1602,7 @@ public class SQLBattleManager {
 
             Component line = Component.text("[" + id + "] ", NamedTextColor.AQUA)
                 .append(Component.text(title, NamedTextColor.WHITE))
-                .append(Component.text("  (copiar al chat)", NamedTextColor.GREEN))
+                .append(Component.text("  (click para editar)", NamedTextColor.GREEN))
                 .clickEvent(ClickEvent.suggestCommand(query));
 
             player.sendMessage(line);
@@ -1639,6 +1719,16 @@ public class SQLBattleManager {
         objective.getScore(ChatColor.YELLOW + "Oleada: " + ChatColor.WHITE + wave).setScore(score--);
         objective.getScore(ChatColor.YELLOW + "Etapa: " + ChatColor.WHITE + stage).setScore(score--);
         objective.getScore(ChatColor.GREEN + "AP: " + ChatColor.WHITE + points).setScore(score--);
+
+        // Slots disponibles en hotbar (0-6) durante preparación
+        if (session.phase == BattleSessionPhase.PREPARATION) {
+            try {
+                int hotbarUsed = session.database.getHotbarItemCount();
+                int hotbarFree = Math.max(0, 7 - hotbarUsed);
+                objective.getScore(ChatColor.AQUA + "Slots hotbar: " + ChatColor.WHITE + hotbarFree + "/7").setScore(score--);
+            } catch (Exception ignored) { score--; }
+        }
+
         objective.getScore(ChatColor.BLACK.toString()).setScore(score--);
         objective.getScore(ChatColor.AQUA + "SELECT: 1 AP").setScore(score--);
         objective.getScore(ChatColor.GOLD + "INSERT: 2 AP").setScore(score--);
@@ -1724,6 +1814,48 @@ public class SQLBattleManager {
         book.setItemMeta(meta);
         player.getInventory().addItem(book);
         player.sendMessage(ChatColor.GRAY + "Se agrego un libro con el resultado completo a tu inventario.");
+    }
+
+    /**
+     * After a DELETE on inventario commits, removes from the player's physical inventory
+     * every item whose row was present before the DELETE but is now gone.
+     * Identifies items by matching their Bukkit slot from the pre-delete position snapshot.
+     */
+    private void syncPhysicalInventoryAfterDelete(Player player, Map<Integer, Integer> positionsBefore) {
+        try {
+            BattlePlayerSession sess = getActiveSession(player);
+            if (sess == null) return;
+            Map<Integer, Integer> after = sess.database.snapshotInventarioPositions();
+
+            for (Map.Entry<Integer, Integer> entry : positionsBefore.entrySet()) {
+                int itemId = entry.getKey();
+                int slot   = entry.getValue();
+                if (after.containsKey(itemId)) continue; // still in DB, don't remove
+                if (slot < 0) continue; // was never placed physically
+                // Remove the physical item at that slot
+                player.getInventory().setItem(slot, null);
+                player.sendMessage(ChatColor.GRAY + "Item id=" + itemId + " removido del inventario fisico (slot " + slot + ").");
+            }
+        } catch (Exception e) {
+            logger.warning("Could not sync physical inventory after DELETE for '" + player.getName() + "': " + e.getMessage());
+        }
+    }
+
+    /**
+     * Clears battle-assigned items from the player's physical inventory:
+     * hotbar slots 0-6 and armor/offhand slots 36-40.
+     * Slots 7 and 8 (system items) are intentionally preserved.
+     */
+    private void clearBattleItems(Player player) {
+        org.bukkit.inventory.PlayerInventory inv = player.getInventory();
+        for (int s = 0; s <= 6; s++) {
+            inv.setItem(s, null);
+        }
+        // Armor slots: boots=36, leggings=37, chestplate=38, helmet=39, offhand=40
+        for (int s = 36; s <= 40; s++) {
+            inv.setItem(s, null);
+        }
+        inv.setItemInOffHand(null);
     }
 
     private void clearQueryResultBooks(Player player) {
@@ -2012,11 +2144,36 @@ public class SQLBattleManager {
         setWaveActive(session.worldName, true);
         spawnWaveEntities(player, session);
         giveInventoryItemsToPlayer(player, session, FIRST_WAVE_STAGE);
-        player.getInventory().addItem(new ItemStack(Material.TORCH, 1));
-        updatePreparationSidebar(player);
 
-        player.sendMessage(ChatColor.AQUA + reason);
-        player.sendMessage(ChatColor.GREEN + "+1 Antorcha gratis para la oleada.");
+        // Give free torch (item_id=24) only if not already tracked in inventario
+        try {
+            boolean inserted = session.database.insertGiftItemIfAbsent(24, 1, FIRST_WAVE_STAGE);
+            if (inserted) {
+                org.bukkit.inventory.PlayerInventory inv = player.getInventory();
+                int torchSlot = -1;
+                for (int s = 0; s <= 6; s++) {
+                    ItemStack existing = inv.getItem(s);
+                    if (existing == null || existing.getType() == Material.AIR) {
+                        torchSlot = s;
+                        break;
+                    }
+                }
+                if (torchSlot >= 0) {
+                    ItemStack torch = new ItemStack(Material.TORCH, 1);
+                    setSlotLore(torch, String.valueOf(torchSlot));
+                    inv.setItem(torchSlot, torch);
+                    session.database.updateInventarioPosition(24, torchSlot);
+                    player.sendMessage(ChatColor.GREEN + "+1 Antorcha gratis para la oleada."
+                        + ChatColor.GRAY + " (slot " + torchSlot + ")");
+                } else {
+                    player.sendMessage(ChatColor.YELLOW + "No habia espacio en el hotbar para la antorcha.");
+                }
+            }
+            // else: torch already in inventario from previous wave, skip silently
+        } catch (Exception e) {
+            logger.warning("Could not give torch to player '" + player.getName() + "': " + e.getMessage());
+        }
+        updatePreparationSidebar(player);
         showWaveIntro(player, session);
     }
 
@@ -2159,27 +2316,90 @@ public class SQLBattleManager {
             if (items.isEmpty()) {
                 return;
             }
+
+            org.bukkit.inventory.PlayerInventory inv = player.getInventory();
+            int nextHotbarSlot = 0; // will walk 0-6; slots 7-8 are reserved for system items
+
             for (BattleSQLDatabase.InventoryItemRow row : items) {
-                Material mat = mapItemIdToMaterial(row.getItemId());
+                int itemId = row.getItemId();
+                Material mat = mapItemIdToMaterial(itemId);
                 if (mat == null) {
                     continue;
                 }
-                if (mat == Material.POTION) {
+
+                // Skip items already physically placed from a previous wave or stage
+                if (row.getPosition() >= 0) {
+                    continue;
+                }
+
+                int armorSlot = getArmorSlotForItemId(itemId);
+
+                if (armorSlot >= 0) {
+                    // ---- Armor / offhand item ----
+                    ItemStack existing = inv.getItem(armorSlot);
+                    if (existing != null && existing.getType() != Material.AIR) {
+                        player.sendMessage(ChatColor.YELLOW + "No se pudo equipar " + row.getNombre()
+                            + ChatColor.YELLOW + ": el slot de armadura ya está ocupado.");
+                        continue;
+                    }
+                    ItemStack stack = new ItemStack(mat, 1);
+                    setSlotLore(stack, "armadura");
+                    inv.setItem(armorSlot, stack);
+                    session.database.updateInventarioPosition(itemId, armorSlot);
+                    player.sendMessage(ChatColor.GREEN + "+1x " + row.getNombre()
+                        + " " + ChatColor.GRAY + "(etapa " + stage + ", armadura)");
+
+                } else if (mat == Material.POTION) {
+                    // ---- Potions: one item per hotbar slot ----
                     for (int i = 0; i < row.getCantidad(); i++) {
+                        while (nextHotbarSlot <= 6) {
+                            ItemStack existing = inv.getItem(nextHotbarSlot);
+                            if (existing == null || existing.getType() == Material.AIR) break;
+                            nextHotbarSlot++;
+                        }
+                        if (nextHotbarSlot > 6) {
+                            player.sendMessage(ChatColor.YELLOW + "Sin espacio en hotbar para más pociones.");
+                            break;
+                        }
                         ItemStack potion = new ItemStack(Material.POTION);
-                        org.bukkit.inventory.meta.PotionMeta meta = (org.bukkit.inventory.meta.PotionMeta) potion.getItemMeta();
+                        org.bukkit.inventory.meta.PotionMeta meta =
+                            (org.bukkit.inventory.meta.PotionMeta) potion.getItemMeta();
                         if (meta != null) {
-                            meta.setBasePotionData(new org.bukkit.potion.PotionData(org.bukkit.potion.PotionType.INSTANT_HEAL, false, false));
+                            meta.setBasePotionData(new org.bukkit.potion.PotionData(
+                                org.bukkit.potion.PotionType.INSTANT_HEAL, false, false));
                             meta.setDisplayName(ChatColor.RED + "Pocion de Vida");
+                            meta.setLore(java.util.List.of(ChatColor.DARK_GRAY + "Slot: "
+                                + ChatColor.GRAY + nextHotbarSlot));
                             potion.setItemMeta(meta);
                         }
-                        player.getInventory().addItem(potion);
+                        inv.setItem(nextHotbarSlot, potion);
+                        if (i == 0) {
+                            session.database.updateInventarioPosition(itemId, nextHotbarSlot);
+                        }
+                        nextHotbarSlot++;
                     }
+                    player.sendMessage(ChatColor.GREEN + "+" + row.getCantidad() + "x " + row.getNombre()
+                        + " " + ChatColor.GRAY + "(etapa " + stage + ")");
+
                 } else {
-                    player.getInventory().addItem(new ItemStack(mat, row.getCantidad()));
+                    // ---- Regular hotbar item ----
+                    while (nextHotbarSlot <= 6) {
+                        ItemStack existing = inv.getItem(nextHotbarSlot);
+                        if (existing == null || existing.getType() == Material.AIR) break;
+                        nextHotbarSlot++;
+                    }
+                    if (nextHotbarSlot > 6) {
+                        player.sendMessage(ChatColor.YELLOW + "Sin espacio en hotbar para " + row.getNombre() + ".");
+                        continue;
+                    }
+                    ItemStack stack = new ItemStack(mat, row.getCantidad());
+                    setSlotLore(stack, String.valueOf(nextHotbarSlot));
+                    inv.setItem(nextHotbarSlot, stack);
+                    session.database.updateInventarioPosition(itemId, nextHotbarSlot);
+                    player.sendMessage(ChatColor.GREEN + "+" + row.getCantidad() + "x " + row.getNombre()
+                        + " " + ChatColor.GRAY + "(etapa " + stage + ", slot " + nextHotbarSlot + ")");
+                    nextHotbarSlot++;
                 }
-                player.sendMessage(ChatColor.GREEN + "+" + row.getCantidad() + "x " + row.getNombre() + " "
-                    + ChatColor.GRAY + "(etapa " + stage + ")");
             }
         } catch (Exception e) {
             logger.warning("Could not give SQL Battle items to player '" + player.getName() + "': " + e.getMessage());
@@ -2389,6 +2609,33 @@ public class SQLBattleManager {
         return item;
     }
 
+    /**
+     * Returns the Bukkit PlayerInventory slot for armor/offhand items,
+     * or -1 if the item goes to the hotbar.
+     * Slots: boots=36, leggings=37, chestplate=38, helmet=39, offhand=40
+     */
+    private int getArmorSlotForItemId(int itemId) {
+        return switch (itemId) {
+            case 18, 19 -> 36; // boots
+            case 14, 15 -> 37; // leggings
+            case 5, 6   -> 38; // chestplate
+            case 16, 17 -> 39; // helmet
+            case 12     -> 40; // shield (offhand)
+            default     -> -1;
+        };
+    }
+
+    /**
+     * Sets a single-line lore on an ItemStack indicating the inventory slot.
+     * Uses a shallow clone if the item already has a meta.
+     */
+    private void setSlotLore(ItemStack stack, String slotLabel) {
+        ItemMeta meta = stack.getItemMeta();
+        if (meta == null) return;
+        meta.setLore(java.util.List.of(ChatColor.DARK_GRAY + "Slot: " + ChatColor.GRAY + slotLabel));
+        stack.setItemMeta(meta);
+    }
+
     private Material mapItemIdToMaterial(int itemId) {
         return switch (itemId) {
             case 1  -> Material.IRON_SWORD;
@@ -2413,6 +2660,7 @@ public class SQLBattleManager {
             case 21 -> Material.TNT;
             case 22 -> Material.CROSSBOW;
             case 23 -> Material.GOLDEN_APPLE;
+            case 24 -> Material.TORCH;
             default -> null; // 10 = golem (spawned as entity), unknown items ignored
         };
     }

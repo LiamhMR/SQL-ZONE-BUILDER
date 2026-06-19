@@ -62,6 +62,15 @@ commands:
   login:
     description: Authenticate an existing user
     usage: /login <password>
+  pucvname:
+    description: Registrar nombre completo asociado a tu nick (uso estudiantil)
+    usage: /pucvname <nombre_completo>
+  impucv:
+    description: Mostrar nombre registrado (tuyo o de otro nick)
+    usage: /impucv [nick]
+  pucvlist:
+    description: (Admin) Mostrar lista completa de nombres registrados
+    usage: /pucvlist
 
 permissions:
   seminario.admin:
@@ -151,6 +160,9 @@ permissions:
   seminario.lobby.inventory:
     description: Allows getting lobby inventory items
     default: true
+  pucv.admin:
+    description: Permite listar los nombres registrados con /pucvlist
+    default: op
 
 depend: []
 softdepend: [WorldEdit]

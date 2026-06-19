@@ -11,6 +11,7 @@ com\seminario\plugin\manager\CountHologramManager.class
 com\seminario\plugin\sql\battle\ActionPointCost.class
 com\seminario\plugin\sql\battle\BattleValidationResult.class
 com\seminario\plugin\model\SQLBattleWorld.class
+com\seminario\plugin\commands\FullNameCommand.class
 com\seminario\plugin\model\QuestQuestion.class
 com\seminario\plugin\App.class
 com\seminario\plugin\manager\HarryNPCManager$1.class
@@ -105,8 +106,10 @@ com\seminario\plugin\util\SlideMapRenderer$ImageMapRenderer.class
 com\seminario\plugin\util\SingleMapRenderer.class
 com\seminario\plugin\manager\SurveyManager$FaceImageRenderer.class
 com\seminario\plugin\model\SQLDungeonWorld.class
+com\seminario\plugin\model\SQLDifficulty$1.class
 com\seminario\plugin\listener\SQLPlayerListener.class
 com\seminario\plugin\sql\context\engine\GenericSQLValidationEngine$ValidationResult.class
+com\seminario\plugin\manager\SQLBattleManager$1.class
 com\seminario\plugin\sql\battle\BattleQueryExecutor.class
 com\seminario\plugin\listener\SQLBattleWaveListener.class
 com\seminario\plugin\manager\SlideManager.class

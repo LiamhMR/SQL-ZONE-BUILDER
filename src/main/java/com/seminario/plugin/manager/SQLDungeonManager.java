@@ -44,6 +44,7 @@ public class SQLDungeonManager {
     private final ConfigManager configManager;
     private final SQLDatabase database;
     private final SQLValidationEngine validationEngine;
+    private final SpawnpointManager spawnpointManager;
     
     // Player session tracking
     private final Map<Player, Integer> playerCurrentLevel;
@@ -88,6 +89,7 @@ public class SQLDungeonManager {
         this.configManager = configManager;
         this.database = new SQLDatabase(plugin);
         this.validationEngine = new SQLValidationEngine(database, plugin);
+        this.spawnpointManager = new SpawnpointManager(plugin, configManager);
         this.playerCurrentLevel = new HashMap<>();
         this.playerStartTime = new HashMap<>();
         this.playerCurrentWorld = new HashMap<>();
@@ -885,8 +887,11 @@ public class SQLDungeonManager {
                 player.sendMessage(Component.text("🌟 Regresando al spawn del servidor...", NamedTextColor.YELLOW));
                 
                 // Teleport to server spawn after a short delay
+                
                 plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+                    /*  ALL THIS IS WRONG
                     Location spawnLocation = getServerSpawnLocation();
+                    
                     if (spawnLocation != null) {
                         player.teleport(spawnLocation);
                         player.sendMessage(Component.text("✅ ¡Bienvenido de vuelta al spawn!", NamedTextColor.GREEN));
@@ -908,7 +913,9 @@ public class SQLDungeonManager {
                             com.seminario.plugin.App mainPlugin = (com.seminario.plugin.App) plugin;
                             mainPlugin.getLobbyManager().giveLobbyInventoryWithPostTest(player, true);
                         }, 10L);
-                    }
+                    }*/
+                   //Use direct function
+                   spawnpointManager.teleportToSpawnpoint(player, false);
                 }, 60L); // 3 second delay to let them read the congratulations message
                 
                 // Clear session
@@ -1075,8 +1082,10 @@ public class SQLDungeonManager {
      */
     private Location getServerSpawnLocation() {
         try {
+
             // Try to get the main world spawn (usually the first world loaded)
             org.bukkit.World mainWorld = plugin.getServer().getWorlds().get(0);
+            
             if (mainWorld != null) {
                 return mainWorld.getSpawnLocation();
             }

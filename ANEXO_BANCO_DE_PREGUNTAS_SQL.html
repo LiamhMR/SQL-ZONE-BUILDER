@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Anexo: Banco de Preguntas SQL</title>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; margin: 24px; }
+    h1, h2, h3 { color: #1a1a1a; }
+    table { border-collapse: collapse; width: 100%; margin-bottom: 24px; }
+    th, td { border: 1px solid #ccc; padding: 8px; vertical-align: top; }
+    th { background: #f0f0f0; text-align: left; }
+    code { background: #f7f7f7; padding: 2px 4px; border-radius: 4px; }
+    ul { margin: 0; padding-left: 20px; }
+    .note { margin-bottom: 20px; }
+  </style>
+</head>
+<body>
+  <h1>Anexo: Banco de Preguntas SQL</h1>
+  <p class="note">
+    Este anexo documenta el banco de preguntas del plugin SQL, basado en el contenido de <code>src/main/java/com/seminario/plugin/sql/SQLChallengeBank.java</code>.
+    Cada nivel contiene los enunciados de los desafíos, la consulta SQL esperada y las pistas asociadas.
+  </p>
+
+  <h2>Nivel 1 (Básico)</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Enunciado</th>
+        <th>Consulta esperada</th>
+        <th>Pista 1</th>
+        <th>Pista 2</th>
+        <th>Pista 3</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Muestra los 'nombres' de todos los jugadores del mundo 'overworld'</td>
+        <td><code>SELECT nombre FROM Jugadores WHERE mundo = 'overworld'</code></td>
+        <td>Usa SELECT nombre FROM Jugadores</td>
+        <td>Filtra por mundo con WHERE</td>
+        <td>Usa comillas simples para el texto: 'overworld'</td>
+      </tr>
+      <tr>
+        <td>Lista los nombres de todos los jugadores que tienen nivel mayor a 20</td>
+        <td><code>SELECT nombre FROM Jugadores WHERE nivel > 20</code></td>
+        <td>SELECT nombre FROM la tabla Jugadores</td>
+        <td>WHERE nivel > [número]</td>
+        <td>El número es 20</td>
+      </tr>
+      <tr>
+        <td>Encuentra los nombres de jugadores que tienen más de 50 esmeraldas</td>
+        <td><code>SELECT nombre FROM Jugadores WHERE esmeraldas > 50</code></td>
+        <td>Consulta la tabla Jugadores</td>
+        <td>Filtra por la columna esmeraldas</td>
+        <td>Usa el operador > para 'mayor que'</td>
+      </tr>
+      <tr>
+        <td>Muestra todos los 'items' del inventario que son 'épico'</td>
+        <td><code>SELECT item FROM Inventarios WHERE rareza = 'épico'</code></td>
+        <td>SELECT item FROM Inventarios</td>
+        <td>WHERE rareza = [valor]</td>
+        <td>El valor es 'épico' entre comillas</td>
+      </tr>
+      <tr>
+        <td>Lista los nombres de todos los jugadores que tienen menos de 30 oro</td>
+        <td><code>SELECT nombre FROM Jugadores WHERE oro < 30</code></td>
+        <td>Usa SELECT nombre FROM Jugadores</td>
+        <td>WHERE oro < [número]</td>
+        <td>El número es 30</td>
+      </tr>
+      <tr>
+        <td>Encuentra los 'nombres' de jugadores que tienen exactamente 25 nivel</td>
+        <td><code>SELECT nombre FROM Jugadores WHERE nivel = 25</code></td>
+        <td>Usa el operador = para igualdad exacta</td>
+        <td>WHERE nivel = [número]</td>
+        <td>El número es 25</td>
+      </tr>
+      <tr>
+        <td>Muestra los 'items' del inventario que NO son raros</td>
+        <td><code>SELECT item FROM Inventarios WHERE rareza != 'raro'</code></td>
+        <td>Usa != para 'no igual'</td>
+        <td>WHERE rareza != [valor]</td>
+        <td>El valor es 'raro' entre comillas</td>
+      </tr>
+      <tr>
+        <td>Lista los nombres de jugadores del mundo 'nether' o 'end'</td>
+        <td><code>SELECT nombre FROM Jugadores WHERE mundo = 'nether' OR mundo = 'end'</code></td>
+        <td>Usa OR para múltiples condiciones</td>
+        <td>WHERE mundo = 'nether' OR mundo = 'end'</td>
+        <td>Usa comillas simples para ambos valores</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Nivel 2 (Intermedio)</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Enunciado</th>
+        <th>Consulta esperada</th>
+        <th>Pista 1</th>
+        <th>Pista 2</th>
+        <th>Pista 3</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Lista los 'nombres' de jugadores ordenados por cantidad de 'diamantes' (mayor a menor)</td>
+        <td><code>SELECT nombre, diamantes FROM Jugadores ORDER BY diamantes DESC</code></td>
+        <td>Usa ORDER BY para ordenar</td>
+        <td>DESC significa descendente (mayor a menor)</td>
+        <td>Incluye tanto nombre como diamantes en SELECT</td>
+      </tr>
+      <tr>
+        <td>Encuentra los 'nombres' de los 3 jugadores con más 'oro'</td>
+        <td><code>SELECT nombre, oro FROM Jugadores ORDER BY oro DESC LIMIT 3</code></td>
+        <td>ORDER BY oro DESC para ordenar por oro</td>
+        <td>LIMIT [número] para limitar resultados</td>
+        <td>El número es 3</td>
+      </tr>
+      <tr>
+        <td>Muestra los 'nombres' de jugadores que tienen entre 10 y 200 'diamantes'</td>
+        <td><code>SELECT nombre, diamantes FROM Jugadores WHERE diamantes BETWEEN 10 AND 200</code></td>
+        <td>Usa BETWEEN para rangos</td>
+        <td>La sintaxis es: BETWEEN valor1 AND valor2</td>
+        <td>Los valores son 10 y 200</td>
+      </tr>
+      <tr>
+        <td>Lista 'items' encantados del inventario ordenados por 'cantidad'</td>
+        <td><code>SELECT item, cantidad FROM Inventarios WHERE encantado = true ORDER BY cantidad DESC</code></td>
+        <td>WHERE encantado = true para items encantados</td>
+        <td>ORDER BY cantidad DESC para ordenar</td>
+        <td>true se escribe sin comillas</td>
+      </tr>
+      <tr>
+        <td>Encuentra jugadores cuyos nombres empiecen con 'A' o 'S'</td>
+        <td><code>SELECT nombre FROM Jugadores WHERE nombre LIKE 'A%' OR nombre LIKE 'S%'</code></td>
+        <td>Usa LIKE con % para patrones</td>
+        <td>% significa 'cualquier texto después'</td>
+        <td>Usa OR para múltiples condiciones</td>
+      </tr>
+      <tr>
+        <td>Muestra los 5 jugadores con menos esmeraldas. (Lista nombres y esmeraldas)</td>
+        <td><code>SELECT nombre, esmeraldas FROM Jugadores ORDER BY esmeraldas ASC LIMIT 5</code></td>
+        <td>ORDER BY esmeraldas ASC para ordenar ascendente</td>
+        <td>LIMIT 5 para los primeros 5 resultados</td>
+        <td>ASC significa ascendente (menor a mayor)</td>
+      </tr>
+      <tr>
+        <td>Lista jugadores con nivel entre 15 y 30. (Incluye nombre y nivel)</td>
+        <td><code>SELECT nombre, nivel FROM Jugadores WHERE nivel BETWEEN 15 AND 30</code></td>
+        <td>BETWEEN incluye los valores límite</td>
+        <td>WHERE nivel BETWEEN 15 AND 30</td>
+        <td>Incluye nombre y nivel en SELECT</td>
+      </tr>
+      <tr>
+        <td>Encuentra 'items' que contengan la palabra 'espada'</td>
+        <td><code>SELECT item FROM Inventarios WHERE item LIKE '%espada%'</code></td>
+        <td>LIKE '%espada%' busca la palabra en cualquier parte</td>
+        <td>% antes y después busca en cualquier posición</td>
+        <td>SELECT item FROM Inventarios</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Nivel 3 (Avanzado)</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Enunciado</th>
+        <th>Consulta esperada</th>
+        <th>Pista 1</th>
+        <th>Pista 2</th>
+        <th>Pista 3</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Cuenta cuántos jugadores hay en cada mundo</td>
+        <td><code>SELECT mundo, COUNT(*) FROM Jugadores GROUP BY mundo</code></td>
+        <td>Usa COUNT(*) para contar filas</td>
+        <td>GROUP BY mundo agrupa por mundo</td>
+        <td>SELECT debe incluir la columna del GROUP BY</td>
+      </tr>
+      <tr>
+        <td>Muestra el total de diamantes por mundo</td>
+        <td><code>SELECT mundo, SUM(diamantes) FROM Jugadores GROUP BY mundo</code></td>
+        <td>SUM(diamantes) suma todos los diamantes</td>
+        <td>GROUP BY mundo agrupa por mundo</td>
+        <td>SELECT mundo, SUM(diamantes)</td>
+      </tr>
+      <tr>
+        <td>Lista los tipos de construcción y cuántas hay de cada tipo</td>
+        <td><code>SELECT tipo, COUNT(*) FROM Construcciones GROUP BY tipo</code></td>
+        <td>COUNT(*) cuenta las construcciones</td>
+        <td>GROUP BY tipo agrupa por tipo</td>
+        <td>SELECT tipo, COUNT(*)</td>
+      </tr>
+      <tr>
+        <td>Encuentra el promedio de nivel de los jugadores por mundo</td>
+        <td><code>SELECT mundo, AVG(nivel) FROM Jugadores GROUP BY mundo</code></td>
+        <td>AVG(nivel) calcula el promedio</td>
+        <td>GROUP BY mundo agrupa por mundo</td>
+        <td>SELECT mundo, AVG(nivel)</td>
+      </tr>
+      <tr>
+        <td>Muestra mundos que tienen más de 2 jugadores</td>
+        <td><code>SELECT mundo, COUNT(*) FROM Jugadores GROUP BY mundo HAVING COUNT(*) &gt; 2</code></td>
+        <td>GROUP BY mundo para agrupar</td>
+        <td>HAVING se usa después de GROUP BY</td>
+        <td>HAVING COUNT(*) &gt; 2 filtra grupos</td>
+      </tr>
+      <tr>
+        <td>Calcula el total de oro por mundo, ordenado de mayor a menor</td>
+        <td><code>SELECT mundo, SUM(oro) FROM Jugadores GROUP BY mundo ORDER BY SUM(oro) DESC</code></td>
+        <td>SUM(oro) suma el oro por mundo</td>
+        <td>ORDER BY SUM(oro) DESC ordena por suma descendente</td>
+        <td>Combina GROUP BY con ORDER BY</td>
+      </tr>
+      <tr>
+        <td>Encuentra el promedio de esmeraldas por mundo donde hay más de 1 jugador</td>
+        <td><code>SELECT mundo, AVG(esmeraldas) FROM Jugadores GROUP BY mundo HAVING COUNT(*) &gt; 1</code></td>
+        <td>AVG(esmeraldas) calcula el promedio</td>
+        <td>HAVING COUNT(*) &gt; 1 filtra mundos con más de 1 jugador</td>
+        <td>GROUP BY mundo para agrupar</td>
+      </tr>
+      <tr>
+        <td>Muestra la cantidad máxima de diamantes por mundo</td>
+        <td><code>SELECT mundo, MAX(diamantes) FROM Jugadores GROUP BY mundo</code></td>
+        <td>MAX(diamantes) encuentra el valor máximo</td>
+        <td>GROUP BY mundo agrupa por mundo</td>
+        <td>SELECT mundo, MAX(diamantes)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Nivel 4 (Experto)</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Enunciado</th>
+        <th>Consulta esperada</th>
+        <th>Pista 1</th>
+        <th>Pista 2</th>
+        <th>Pista 3</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Lista jugadores con sus construcciones (nombre del jugador y nombre de construcción)</td>
+        <td><code>SELECT j.nombre, c.nombre FROM Jugadores j INNER JOIN Construcciones c ON j.jugador_pk = c.jugador_fk</code></td>
+        <td>Usa INNER JOIN para conectar tablas</td>
+        <td>ON j.jugador_pk = c.jugador_fk relaciona las claves</td>
+        <td>j y c son alias para las tablas</td>
+      </tr>
+      <tr>
+        <td>Encuentra jugadores que tienen al menos una construcción tipo 'castillo'</td>
+        <td><code>SELECT DISTINCT j.nombre FROM Jugadores j INNER JOIN Construcciones c ON j.jugador_pk = c.jugador_fk WHERE c.tipo = 'castillo'</code></td>
+        <td>INNER JOIN conecta Jugadores y Construcciones</td>
+        <td>WHERE c.tipo = 'castillo' filtra por tipo</td>
+        <td>DISTINCT evita duplicados</td>
+      </tr>
+      <tr>
+        <td>Muestra jugadores con la cantidad total de bloques usados en sus construcciones</td>
+        <td><code>SELECT j.nombre, SUM(c.bloques_usados) FROM Jugadores j INNER JOIN Construcciones c ON j.jugador_pk = c.jugador_fk GROUP BY j.nombre</code></td>
+        <td>INNER JOIN conecta las tablas por las claves</td>
+        <td>SUM(c.bloques_usados) suma los bloques</td>
+        <td>GROUP BY j.nombre agrupa por jugador</td>
+      </tr>
+      <tr>
+        <td>Lista jugadores que han obtenido logros de la categoría 'construcción'</td>
+        <td><code>SELECT DISTINCT j.nombre FROM Jugadores j INNER JOIN Logros l ON j.jugador_pk = l.jugador_fk WHERE l.categoria = 'construcción'</code></td>
+        <td>JOIN Jugadores con Logros usando claves PK-FK</td>
+        <td>WHERE l.categoria = 'construcción'</td>
+        <td>DISTINCT elimina duplicados</td>
+      </tr>
+      <tr>
+        <td>Encuentra el jugador que más ha comerciado (como vendedor)</td>
+        <td><code>SELECT j.nombre, COUNT(*) as ventas FROM Jugadores j INNER JOIN Comercio c ON j.jugador_pk = c.vendedor_fk GROUP BY j.nombre ORDER BY ventas DESC LIMIT 1</code></td>
+        <td>JOIN Jugadores con Comercio por vendedor_fk</td>
+        <td>GROUP BY j.nombre y COUNT(*)</td>
+        <td>ORDER BY ventas DESC LIMIT 1</td>
+      </tr>
+      <tr>
+        <td>Lista jugadores con sus items del inventario (nombre jugador y item)</td>
+        <td><code>SELECT j.nombre, i.item FROM Jugadores j INNER JOIN Inventarios i ON j.jugador_pk = i.jugador_fk</code></td>
+        <td>JOIN Jugadores con Inventarios usando claves</td>
+        <td>ON j.jugador_pk = i.jugador_fk relaciona las tablas</td>
+        <td>SELECT j.nombre, i.item</td>
+      </tr>
+      <tr>
+        <td>Encuentra jugadores que han hecho más de 2 transacciones como compradores</td>
+        <td><code>SELECT j.nombre, COUNT(*) as compras FROM Jugadores j INNER JOIN Comercio c ON j.jugador_pk = c.comprador_fk GROUP BY j.nombre HAVING COUNT(*) &gt; 2</code></td>
+        <td>JOIN con Comercio usando comprador_fk</td>
+        <td>GROUP BY j.nombre y COUNT(*)</td>
+        <td>HAVING COUNT(*) &gt; 2 filtra por más de 2</td>
+      </tr>
+      <tr>
+        <td>Muestra construcciones con el nombre de su dueño y total de bloques</td>
+        <td><code>SELECT j.nombre, c.nombre, c.bloques_usados FROM Jugadores j INNER JOIN Construcciones c ON j.jugador_pk = c.jugador_fk ORDER BY c.bloques_usados DESC</code></td>
+        <td>JOIN Jugadores con Construcciones usando claves</td>
+        <td>SELECT nombre jugador, nombre construcción, bloques</td>
+        <td>ORDER BY c.bloques_usados DESC para ordenar</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Nivel 5 (Maestro)</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Enunciado</th>
+        <th>Consulta esperada</th>
+        <th>Pista 1</th>
+        <th>Pista 2</th>
+        <th>Pista 3</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Lista jugadores que tienen construcciones pero nunca han comerciado</td>
+        <td><code>SELECT DISTINCT j.nombre FROM Jugadores j INNER JOIN Construcciones c ON j.jugador_pk = c.jugador_fk WHERE j.jugador_pk NOT IN (SELECT DISTINCT vendedor_fk FROM Comercio UNION SELECT DISTINCT comprador_fk FROM Comercio)</code></td>
+        <td>INNER JOIN para jugadores con construcciones</td>
+        <td>NOT IN con subconsulta para excluir comerciantes</td>
+        <td>UNION combina vendedores y compradores</td>
+      </tr>
+      <tr>
+        <td>Encuentra jugadores que tienen más diamantes que el promedio</td>
+        <td><code>SELECT nombre, diamantes FROM Jugadores WHERE diamantes > (SELECT AVG(diamantes) FROM Jugadores)</code></td>
+        <td>Subconsulta: (SELECT AVG(diamantes) FROM Jugadores)</td>
+        <td>WHERE diamantes &gt; [subconsulta]</td>
+        <td>La subconsulta calcula el promedio</td>
+      </tr>
+      <tr>
+        <td>Muestra el ranking de jugadores por puntos totales de logros</td>
+        <td><code>SELECT j.nombre, COALESCE(SUM(l.puntos), 0) as puntos_totales FROM Jugadores j LEFT JOIN Logros l ON j.jugador_pk = l.jugador_fk GROUP BY j.nombre ORDER BY puntos_totales DESC</code></td>
+        <td>LEFT JOIN incluye jugadores sin logros</td>
+        <td>COALESCE(SUM(l.puntos), 0) maneja valores NULL</td>
+        <td>ORDER BY puntos_totales DESC para ranking</td>
+      </tr>
+      <tr>
+        <td>Lista jugadores con más construcciones que el promedio de construcciones por jugador</td>
+        <td><code>SELECT j.nombre, COUNT(c.construccion_pk) as construcciones FROM Jugadores j LEFT JOIN Construcciones c ON j.jugador_pk = c.jugador_fk GROUP BY j.nombre HAVING COUNT(c.construccion_pk) &gt; (SELECT AVG(construcciones_por_jugador) FROM (SELECT COUNT(*) as construcciones_por_jugador FROM Construcciones GROUP BY jugador_fk) as subconsulta)</code></td>
+        <td>LEFT JOIN para incluir todos los jugadores</td>
+        <td>HAVING con subconsulta compleja</td>
+        <td>Subconsulta calcula promedio de construcciones</td>
+      </tr>
+      <tr>
+        <td>Encuentra pares de jugadores que han comerciado entre sí (intercambio mutuo)</td>
+        <td><code>SELECT DISTINCT j1.nombre as jugador1, j2.nombre as jugador2 FROM Comercio c1 INNER JOIN Comercio c2 ON c1.vendedor_fk = c2.comprador_fk AND c1.comprador_fk = c2.vendedor_fk INNER JOIN Jugadores j1 ON c1.vendedor_fk = j1.jugador_pk INNER JOIN Jugadores j2 ON c1.comprador_fk = j2.jugador_pk WHERE j1.jugador_pk &lt; j2.jugador_pk</code></td>
+        <td>Doble JOIN en Comercio (c1 y c2)</td>
+        <td>Condiciones cruzadas: vendedor = comprador</td>
+        <td>WHERE j1.jugador_pk &lt; j2.jugador_pk evita duplicados</td>
+      </tr>
+      <tr>
+        <td>Lista jugadores que tienen más oro que cualquier jugador del mundo 'nether'</td>
+        <td><code>SELECT nombre, oro FROM Jugadores WHERE oro &gt; (SELECT MAX(oro) FROM Jugadores WHERE mundo = 'nether')</code></td>
+        <td>Subconsulta con MAX para encontrar el máximo oro en nether</td>
+        <td>WHERE oro &gt; [subconsulta con MAX]</td>
+        <td>Compara con el valor máximo de otro grupo</td>
+      </tr>
+      <tr>
+        <td>Encuentra jugadores con items únicos (que nadie más tiene)</td>
+        <td><code>SELECT DISTINCT j.nombre, i.item FROM Jugadores j INNER JOIN Inventarios i ON j.jugador_pk = i.jugador_fk WHERE i.item IN (SELECT item FROM Inventarios GROUP BY item HAVING COUNT(DISTINCT jugador_fk) = 1)</code></td>
+        <td>Subconsulta que encuentra items únicos</td>
+        <td>HAVING COUNT(DISTINCT jugador_fk) = 1</td>
+        <td>Items que solo tiene un jugador</td>
+      </tr>
+      <tr>
+        <td>Muestra el top 3 de mundos por riqueza total (suma de oro + diamantes + esmeraldas)</td>
+        <td><code>SELECT mundo, SUM(oro + diamantes + esmeraldas) as riqueza_total FROM Jugadores GROUP BY mundo ORDER BY riqueza_total DESC LIMIT 3</code></td>
+        <td>Suma múltiples columnas: oro + diamantes + esmeraldas</td>
+        <td>GROUP BY mundo para agrupar por mundo</td>
+        <td>ORDER BY riqueza_total DESC LIMIT 3</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p class="note">
+    Este documento puede añadirse como anexo de la documentación principal, mostrando el banco de preguntas completo y actualizado.
+  </p>
+</body>
+</html>

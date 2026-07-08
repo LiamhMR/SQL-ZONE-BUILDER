@@ -6,6 +6,10 @@ Este plugin fue desarrollado como parte del Seminario de Título de Ingeniería 
 
 El plugin tiene como objetivo ser una herramienta que ayude a transformar el entorno de Minecraft en un espacio de aprendizaje donde los jugadores pueden practicar y aprender consultas SQL a través de desafíos y escenarios diseñados específicamente para este propósito.
 
+# AUTORES
+# LEANDRO MAUREIRA LÓPEZ
+# CAMILO GÁLVEZ CASTRO
+
 ---
 
 ## Documentación de Comandos
